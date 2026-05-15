@@ -3,661 +3,999 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>SUNO FORGE — Prompt Generator</title>
+  <title>SUNO FORGE</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     :root {
-      --bg:          #09090f;
-      --surface:     #0e0e1c;
-      --card:        #13132a;
-      --card2:       #17172e;
-      --border:      #222240;
-      --border-hi:   #3a3a70;
-      --accent:      #7c6af6;
-      --accent-glow: rgba(124,106,246,0.18);
-      --accent-hi:   #9b8aff;
-      --pink:        #e040fb;
-      --pink-dim:    rgba(224,64,251,0.12);
-      --green:       #22d47e;
-      --green-dim:   rgba(34,212,126,0.15);
-      --red:         #f87171;
-      --red-dim:     rgba(248,113,113,0.12);
-      --yellow:      #fbbf24;
-      --yellow-dim:  rgba(251,191,36,0.12);
-      --text:        #ddd8f8;
-      --text-mid:    #9990c0;
-      --text-dim:    #5c5880;
-      --mono:        'JetBrains Mono','Fira Code','Cascadia Code',Consolas,'Courier New',monospace;
+      --bg:        #09090f;
+      --surf:      #0e0e1c;
+      --card:      #13132a;
+      --card2:     #17172e;
+      --bdr:       #222240;
+      --bdr-hi:    #3a3a70;
+      --acc:       #7c6af6;
+      --acc-glow:  rgba(124,106,246,.18);
+      --acc-hi:    #9b8aff;
+      --pink:      #e040fb;
+      --grn:       #22d47e;
+      --grn-dim:   rgba(34,212,126,.15);
+      --red:       #f87171;
+      --red-dim:   rgba(248,113,113,.12);
+      --yel:       #fbbf24;
+      --yel-dim:   rgba(251,191,36,.12);
+      --tx:        #ddd8f8;
+      --tx-mid:    #9990c0;
+      --tx-dim:    #5c5880;
+      --mono: 'JetBrains Mono','Fira Code',Consolas,'Courier New',monospace;
     }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      font-size: 14px;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ── Layout ── */
-    .app { display: flex; flex-direction: column; min-height: 100vh; }
-
-    .header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .header-inner {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .logo { display: flex; align-items: baseline; gap: 8px; }
-    .logo-icon {
-      font-size: 20px;
-      color: var(--accent);
-      filter: drop-shadow(0 0 8px var(--accent));
-      line-height: 1;
-    }
-    .logo-text {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      color: var(--text);
-    }
-    .logo-sub {
-      font-size: 11px;
-      color: var(--text-dim);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .settings-btn {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-mid);
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
-    }
-    .settings-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-    .settings-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-
-    .config-panel {
-      border-top: 1px solid var(--border);
-      padding: 16px 20px;
-      max-width: 1280px;
-      margin: 0 auto;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      align-items: start;
-    }
-    @media (max-width: 640px) { .config-panel { grid-template-columns: 1fr; } }
-    .config-col { display: flex; flex-direction: column; gap: 6px; }
-
-    .main {
-      flex: 1;
-      max-width: 1280px;
-      margin: 0 auto;
-      width: 100%;
-      padding: 24px 20px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-    @media (max-width: 900px) {
-      .main { grid-template-columns: 1fr; }
-    }
-
-    /* ── Panel ── */
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-    }
-    .panel-title {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .panel-title::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* ── Form fields ── */
-    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-    .field:last-child { margin-bottom: 0; }
-
-    .field-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    @media (max-width: 540px) { .field-row { grid-template-columns: 1fr; } }
-
-    .label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-mid);
-    }
-    .optional { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-dim); }
-
-    .input, .select, .textarea {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 14px;
-      padding: 10px 12px;
-      width: 100%;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      outline: none;
-      font-family: inherit;
-    }
-    .input:focus, .select:focus, .textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-    .input::placeholder, .textarea::placeholder { color: var(--text-dim); }
-    .textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
-    .select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236060a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-    .select option { background: var(--card2); color: var(--text); }
-
-    .key-row { display: flex; gap: 8px; }
-    .key-input { flex: 1; font-family: var(--mono); font-size: 13px; }
-    .toggle-key-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text-mid);
-      padding: 0 12px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: border-color 0.2s;
-    }
-    .toggle-key-btn:hover { border-color: var(--border-hi); }
-
-    .hint {
-      font-size: 12px;
-      color: var(--text-dim);
-      line-height: 1.5;
-    }
-    .hint strong { color: var(--text-mid); }
-
-    /* ── Genre chips ── */
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      color: var(--text-mid);
-      font-size: 12px;
-      padding: 4px 12px;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: inherit;
-    }
-    .chip:hover { border-color: var(--border-hi); color: var(--text); }
-    .chip-selected {
-      background: var(--accent-glow);
-      border-color: var(--accent);
-      color: var(--accent-hi);
-      font-weight: 600;
-    }
-
-    /* ── Radio language ── */
-    .radio-group { display: flex; flex-direction: column; gap: 6px; }
-    .radio-label {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .radio-label:hover { border-color: var(--border-hi); }
-    .radio-active { border-color: var(--accent) !important; background: var(--accent-glow) !important; }
-    .radio-input { margin-top: 2px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
-    .radio-content { display: flex; flex-direction: column; gap: 2px; }
-    .radio-title { font-size: 13px; font-weight: 600; color: var(--text); }
-    .radio-desc { font-size: 11px; color: var(--text-mid); line-height: 1.4; }
-
-    /* ── Buttons ── */
-    .generate-btn {
-      width: 100%;
-      padding: 14px 20px;
-      border-radius: 10px;
-      border: none;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--pink) 100%);
-      color: #fff;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 20px;
-      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
-      box-shadow: 0 4px 24px rgba(124,106,246,0.35);
-    }
-    .generate-btn:hover:not(:disabled) {
-      opacity: 0.92;
-      box-shadow: 0 4px 32px rgba(124,106,246,0.55);
-      transform: translateY(-1px);
-    }
-    .generate-btn:active:not(:disabled) { transform: translateY(0); }
-    .generate-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    .regen-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text-mid);
-      padding: 10px 20px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
-      width: 100%;
-      margin-top: 4px;
-    }
-    .regen-btn:hover:not(:disabled) {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-glow);
-    }
-    .regen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .copy-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-mid);
-      padding: 5px 12px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: inherit;
-      transition: all 0.15s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .copy-btn:hover { border-color: var(--border-hi); color: var(--text); }
-    .copy-btn.copied {
-      background: var(--green-dim);
-      border-color: var(--green);
-      color: var(--green);
-    }
-
-    /* ── Spinner ── */
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      flex-shrink: 0;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .pulse-ring {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: 2px solid var(--accent);
-      animation: pulse 1.4s ease-in-out infinite;
-      margin: 0 auto 16px;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(0.8); opacity: 0.4; }
-      50% { transform: scale(1.1); opacity: 1; }
-    }
-
-    /* ── Error / info ── */
-    .error-box {
-      background: var(--red-dim);
-      border: 1px solid var(--red);
-      border-radius: 8px;
-      color: var(--red);
-      padding: 10px 14px;
-      font-size: 13px;
-      margin-top: 12px;
-      line-height: 1.5;
-    }
-
-    /* ── Output ── */
-    .empty-state {
-      text-align: center;
-      padding: 48px 24px;
-      color: var(--text-dim);
-      font-size: 14px;
-      line-height: 1.8;
-    }
-    .empty-icon {
-      font-size: 36px;
-      color: var(--border-hi);
-      margin-bottom: 12px;
-      display: block;
-      filter: drop-shadow(0 0 12px var(--accent-glow));
-    }
-
-    .result { display: flex; flex-direction: column; gap: 16px; }
-
-    .result-block {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-    }
-    .result-block:hover { border-color: var(--border-hi); }
-
-    .result-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .result-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-    .result-actions { display: flex; align-items: center; gap: 8px; }
-
-    .result-title {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: 0.02em;
-    }
-
-    .result-text {
-      font-family: var(--mono);
-      font-size: 13px;
-      line-height: 1.75;
-      color: var(--text);
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: var(--card2);
-      border-radius: 6px;
-      padding: 12px;
-      border: 1px solid var(--border);
-      max-height: 420px;
-      overflow-y: auto;
-    }
-    .result-text::-webkit-scrollbar { width: 4px; }
-    .result-text::-webkit-scrollbar-track { background: transparent; }
-    .result-text::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 4px; }
-
-    .char-counter {
-      font-size: 11px;
-      font-family: var(--mono);
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 4px;
-    }
-    .char-counter.ok    { color: var(--green); background: var(--green-dim); }
-    .char-counter.warn  { color: var(--yellow); background: var(--yellow-dim); }
-    .char-counter.danger{ color: var(--red); background: var(--red-dim); }
-
-    /* ── Scrollbar global ── */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--surface); }
-    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+    .app{display:flex;flex-direction:column;min-height:100vh}
+    /* header */
+    .hdr{background:var(--surf);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100}
+    .hdr-in{max-width:1280px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+    .logo{display:flex;align-items:baseline;gap:8px}
+    .logo-icon{font-size:20px;color:var(--acc);filter:drop-shadow(0 0 8px var(--acc));line-height:1}
+    .logo-txt{font-size:18px;font-weight:800;letter-spacing:.12em}
+    .logo-sub{font-size:11px;color:var(--tx-dim);letter-spacing:.08em;text-transform:uppercase}
+    /* main grid */
+    .main{flex:1;max-width:1280px;margin:0 auto;width:100%;padding:24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+    @media(max-width:900px){.main{grid-template-columns:1fr}}
+    /* panel */
+    .panel{background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:20px}
+    .panel-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx-dim);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+    .panel-title::after{content:'';flex:1;height:1px;background:var(--bdr)}
+    /* fields */
+    .fld{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+    .fld:last-child{margin-bottom:0}
+    .fld-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+    @media(max-width:540px){.fld-row{grid-template-columns:1fr}}
+    .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-mid)}
+    .opt{font-weight:400;text-transform:none;letter-spacing:0;color:var(--tx-dim)}
+    .input,.sel,.ta{background:var(--card);border:1px solid var(--bdr);border-radius:8px;color:var(--tx);font-size:14px;padding:10px 12px;width:100%;transition:border-color .2s,box-shadow .2s;outline:none;font-family:inherit}
+    .input:focus,.sel:focus,.ta:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-glow)}
+    .input::placeholder,.ta::placeholder{color:var(--tx-dim)}
+    .ta{resize:vertical;min-height:72px;line-height:1.5}
+    .sel{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236060a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+    .sel option{background:var(--card2);color:var(--tx)}
+    .hint{font-size:12px;color:var(--tx-dim);line-height:1.5}
+    .hint strong{color:var(--tx-mid)}
+    /* chips */
+    .chips{display:flex;flex-wrap:wrap;gap:6px}
+    .chip{background:var(--card);border:1px solid var(--bdr);border-radius:20px;color:var(--tx-mid);font-size:12px;padding:4px 12px;cursor:pointer;transition:all .15s;font-family:inherit}
+    .chip:hover{border-color:var(--bdr-hi);color:var(--tx)}
+    .chip-on{background:var(--acc-glow);border-color:var(--acc);color:var(--acc-hi);font-weight:600}
+    /* radio */
+    .radio-g{display:flex;flex-direction:column;gap:6px}
+    .radio-lbl{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .2s,background .2s}
+    .radio-lbl:hover{border-color:var(--bdr-hi)}
+    .radio-on{border-color:var(--acc)!important;background:var(--acc-glow)!important}
+    .radio-inp{margin-top:2px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+    .radio-cnt{display:flex;flex-direction:column;gap:2px}
+    .radio-ttl{font-size:13px;font-weight:600;color:var(--tx)}
+    .radio-dsc{font-size:11px;color:var(--tx-mid);line-height:1.4}
+    /* buttons */
+    .gen-btn{width:100%;padding:14px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--acc) 0%,var(--pink) 100%);color:#fff;font-size:15px;font-weight:700;letter-spacing:.04em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;transition:opacity .2s,transform .1s,box-shadow .2s;box-shadow:0 4px 24px rgba(124,106,246,.35);font-family:inherit}
+    .gen-btn:hover:not(:disabled){opacity:.92;box-shadow:0 4px 32px rgba(124,106,246,.55);transform:translateY(-1px)}
+    .gen-btn:active:not(:disabled){transform:translateY(0)}
+    .gen-btn:disabled{opacity:.55;cursor:not-allowed}
+    .regen-btn{background:var(--card);border:1px solid var(--bdr);border-radius:8px;color:var(--tx-mid);padding:10px 20px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:border-color .2s,color .2s,background .2s;width:100%;margin-top:4px}
+    .regen-btn:hover:not(:disabled){border-color:var(--acc);color:var(--acc);background:var(--acc-glow)}
+    .copy-btn{background:var(--card);border:1px solid var(--bdr);border-radius:6px;color:var(--tx-mid);padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all .15s;white-space:nowrap;flex-shrink:0}
+    .copy-btn:hover{border-color:var(--bdr-hi);color:var(--tx)}
+    .copy-ok{background:var(--grn-dim)!important;border-color:var(--grn)!important;color:var(--grn)!important}
+    /* output */
+    .empty{text-align:center;padding:48px 24px;color:var(--tx-dim);font-size:14px;line-height:1.8}
+    .empty-icon{font-size:36px;color:var(--bdr-hi);margin-bottom:12px;display:block;filter:drop-shadow(0 0 12px var(--acc-glow))}
+    .result{display:flex;flex-direction:column;gap:16px}
+    .res-blk{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:14px 16px}
+    .res-blk:hover{border-color:var(--bdr-hi)}
+    .res-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+    .res-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+    .res-acts{display:flex;align-items:center;gap:8px}
+    .res-title{font-size:22px;font-weight:800;color:var(--tx);letter-spacing:.02em}
+    .res-txt{font-family:var(--mono);font-size:13px;line-height:1.75;color:var(--tx);white-space:pre-wrap;word-break:break-word;background:var(--card2);border-radius:6px;padding:12px;border:1px solid var(--bdr);max-height:420px;overflow-y:auto}
+    .res-txt::-webkit-scrollbar{width:4px}
+    .res-txt::-webkit-scrollbar-track{background:transparent}
+    .res-txt::-webkit-scrollbar-thumb{background:var(--bdr-hi);border-radius:4px}
+    .cc{font-size:11px;font-family:var(--mono);font-weight:600;padding:3px 8px;border-radius:4px}
+    .cc-ok{color:var(--grn);background:var(--grn-dim)}
+    .cc-warn{color:var(--yel);background:var(--yel-dim)}
+    .cc-bad{color:var(--red);background:var(--red-dim)}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:var(--surf)}
+    ::-webkit-scrollbar-thumb{background:var(--bdr-hi);border-radius:3px}
   </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script type="text/babel">
-const { useState, useCallback, useEffect } = React;
+const { useState, useCallback } = React;
 
-/* ──────────── CONSTANTS ──────────── */
-
-const GENRES = [
-  'Polish Rap', 'Dark R&B', 'Trap', 'Miami Bass',
-  'Deep Dubstep', 'Wave', 'Phonk', 'Instrumental Hip Hop',
-  'Drill', 'Lo-fi Hip Hop', 'Dark Ambient', 'Jersey Club',
-];
-
-const MOODS = [
-  { val: 'dark', label: 'Mroczny / Dark' },
-  { val: 'melancholic', label: 'Melancholijny / Melancholic' },
-  { val: 'aggressive', label: 'Agresywny / Aggressive' },
-  { val: 'hypnotic', label: 'Hipnotyczny / Hypnotic' },
-  { val: 'cinematic', label: 'Kinematograficzny / Cinematic' },
-  { val: 'introspective', label: 'Introspekcyjny / Introspective' },
-  { val: 'cold', label: 'Zimny / Cold' },
-  { val: 'paranoid', label: 'Paranoiczny / Paranoid' },
-  { val: 'euphoric', label: 'Euforyczny / Euphoric' },
-  { val: 'spiritual', label: 'Duchowy / Spiritual' },
-];
-
-const STRUCTURES = [
-  {
-    id: 'rap-standard',
-    label: 'Rap Standard: V → Hook × 3',
-    desc: 'Three verses (increasing density) separated by a minimal stripped hook. No intro — starts direct. Optional bridge before final hook.'
-  },
-  {
-    id: 'trap',
-    label: 'Trap: Intro → V → Hook × 2 + Bridge',
-    desc: 'Dark instrumental intro (8 bars), two verses with trap hook, breakdown bridge, final hook with added energy layer.'
-  },
-  {
-    id: 'rnb-full',
-    label: 'Dark R&B: V → Pre-C → Chorus × 2 + Bridge',
-    desc: 'Two full verse-pre-chorus-chorus cycles with a contrasting breakdown bridge and final climactic chorus. Full emotional arc.'
-  },
-  {
-    id: 'wave',
-    label: 'Wave/Phonk: Intro → V → Drop × 2 + Outro',
-    desc: 'Atmospheric intro, verse builds tension, drops replace chorus with pure sonic impact. Distorted outro fades into texture.'
-  },
-  {
-    id: 'extended',
-    label: 'Extended: Intro → V → PC → C × 2 + Bridge + Coda',
-    desc: 'Full cinematic structure with all sections. Coda is a final cold statement — single line over bare production.'
-  },
-  {
-    id: 'minimal',
-    label: 'Minimal: V → Refrain × 2',
-    desc: 'Two dense narrative verses with a short repeating refrain (4–6 lines). No traditional chorus. Poem-forward composition.'
-  },
-];
-
-const LANGUAGE_OPTS = [
-  {
-    val: 'polish',
-    title: 'Polski',
-    desc: 'Całkowicie po polsku. Naturalna metryka sylabiczna, autentyczny slang.',
-  },
-  {
-    val: 'english',
-    title: 'English',
-    desc: 'Full English. Optional Polish phrase as contrast.',
-  },
-  {
-    val: 'bilingual',
-    title: 'Dwujęzyczny / Bilingual',
-    desc: 'Polish for dense narrative/personal sections, English for universal hooks. Organic code-switching.',
-  },
-];
-
-const MODELS = [
-  { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6 (fast, ~$0.01)' },
-  { id: 'claude-opus-4-7',   label: 'Opus 4.7 (best quality, ~$0.08)' },
-];
-
-/* ──────────── SYSTEM PROMPT ──────────── */
-
-const SYSTEM_PROMPT = `You are an expert Suno AI music prompt generator. Your task: given a creative brief, produce a complete, professional Suno-ready music package.
-
-## STYLE PROMPT RULES — "Style of Music" field in Suno
-- Target 60–110 words. HARD LIMIT: under 900 characters.
-- Format: comma-separated dense production brief. Treat it as liner notes written for an AI music producer.
-- REQUIRED elements (all of them):
-  • Primary genre(s) — maximum 2–3 labels, no contradictory stacks
-  • BPM range (e.g. "78–85 BPM")
-  • Musical key + mode (e.g. "F# minor", "G Dorian")
-  • Vocal character — voice type, delivery style, texture (e.g. "dry Polish baritone with clipped syllable control")
-  • Instrumental roles with FUNCTION described — not just "guitar" but "guitar carries the rhythmic pulse with muted percussive strokes"
-  • Production texture — reverb depth, saturation level, spatial quality
-  • Emotional tone and structural arc — how the energy moves across the song
-- Lead with whatever most defines the sound: the signature texture, the primary genre, or the vocal character.
-- NEVER cite artist names. Translate them to traits: vocal range, groove pocket, production texture, emotional delivery.
-- FORBIDDEN: abstract adjectives alone ("dark" must attach to a noun: "dark piano voicing"); negative instructions ("no X"); bare instrument lists without function context.
-
-## LYRIC RULES — "Lyrics" field in Suno
-- Section tags: [Intro], [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Outro], [Hook], [Refrain], [Breakdown], [Cold Ending]
-- Enrich key structural moments with combined single-line cues: [Chorus - Big Chorus], [Bridge - Stripped Breakdown], [Outro - Cold Ending], [Verse 1 - Dense Flow]
-- Use 4–8 enriched cue tags per song total — target: intro, first chorus/hook payoff, bridge, final section.
-- VERSES: specific, imagistic, each one advances story or perspective. Syllable-controlled lines. No line padding.
-- CHORUS/HOOK: simple, repeatable, emotionally central. One line that listeners want to repeat.
-- ABSOLUTE FORBIDDEN AI-slop — never write these or any similar clichés:
-  "echoes in my mind" / "burning desire" / "feel the rhythm" / "lost in the night" / "shadows of my soul"
-  "rise and fall" / "tears in the rain" / "dance in the dark" / "shattered dreams" / "fire in my veins"
-  "through the darkness" / "find my way" / "broken inside" / "heart of stone" / "endless night"
-  "feel alive" / "chase my dreams" / "in my veins" / "can't stop now" / "fall apart"
-  Replace every cliché with fresh, specific, surprising imagery.
-- Apply complex rhyme craft: mosaic rhymes (split across syllable boundaries), anadiplosis (end of line repeats as start of next), internal rhyme chains, slant rhyme.
-- Draw from medical, culinary, chemical, architectural registers for metaphors — not emotional abstractions.
-- Polish lyrics: respect natural stress (penultimate syllable), use authentic colloquial Polish, culturally grounded imagery. Not academic — street-literary.
-- Bilingual: assign languages purposefully. Polish = dense personal narrative. English = universal/punchy hooks. Code-switching must feel organic, not accidental.
-
-## USER STYLE PROFILE — always apply
-- Genres: Polish Rap, Dark R&B, Trap, Miami Bass, Deep Dubstep, Wave/Phonk, Instrumental Hip Hop
-- Language default: Polish primary, bilingual Polish/English
-- Tone: dense metaphors, literary layers, medical/culinary/chemical register
-- Craft: complex rhyme schemes, anadiplosis, mosaic rhymes, internal rhymes, syllable control
-- Never write tourist Polish — write how someone who lives in it thinks and speaks.
-
-## QUALITY GATE — verify before outputting
-✓ Style prompt is under 900 characters and reads as a production brief, not a genre list
-✓ No AI-slop phrases anywhere in the lyrics
-✓ Each verse contains at least one fresh, non-generic, register-specific image
-✓ Chorus/hook is genuinely memorable and stripped-down
-✓ Section tags correctly formatted: [Section Name - Cue] on its own line before lyrics
-
-## OUTPUT FORMAT
-Return ONLY a raw JSON object — no markdown fences, no explanation, no surrounding text:
-{"title":"...","style":"...","lyrics":"..."}`;
-
-/* ──────────── USER MESSAGE BUILDER ──────────── */
-
-function buildUserMessage({ concept, genres, mood, language, structure, notes }) {
-  const stObj = STRUCTURES.find(s => s.id === structure);
-  const lgObj = LANGUAGE_OPTS.find(l => l.val === language);
-
-  let msg = `Generate a complete Suno music package for:
-
-CONCEPT / IDEA:
-${concept}
-
-GENRES: ${genres.length ? genres.join(', ') : '(choose from user style profile based on concept)'}
-MOOD: ${mood}
-LANGUAGE: ${lgObj.title} — ${lgObj.desc}
-SONG STRUCTURE: ${stObj.label}
-Structure description: ${stObj.desc}`;
-
-  if (notes.trim()) msg += `\n\nADDITIONAL NOTES:\n${notes}`;
-
-  msg += `\n\nApply all rules from the system prompt. Remember the user's style profile. The lyrics must feel lived-in, not generated.`;
-
-  return msg;
+/* ═══════════════════════════════════════════════════════════
+   RNG  (xorshift32 — seeded per generation for variety)
+═══════════════════════════════════════════════════════════ */
+class RNG {
+  constructor(seed){ this.s = ((seed ^ 0x9e3779b9) >>> 0) || 1 }
+  next(){ this.s ^= this.s<<13; this.s ^= this.s>>>17; this.s ^= this.s<<5; return (this.s>>>0)/0x100000000 }
+  pick(a){ return a[Math.floor(this.next()*a.length)] }
+  int(lo,hi){ return lo+Math.floor(this.next()*(hi-lo+1)) }
+  shuffle(a){ const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(this.next()*(i+1));[b[i],b[j]]=[b[j],b[i]]} return b }
 }
 
-/* ──────────── UTILS ──────────── */
+/* ═══════════════════════════════════════════════════════════
+   GENRE DATA  — BPM, key, vocal, instruments, production, arc
+═══════════════════════════════════════════════════════════ */
+const GENRE_DATA = {
+  'Polish Rap': {
+    bpmLo:78, bpmHi:96,
+    keys:['F# minor','G minor','D minor','A minor','C minor','E minor'],
+    modes:['natural minor','Dorian'],
+    vocal:[
+      'dry Polish baritone with dense syllable control and hard consonant attacks',
+      'low-register Polish rap voice, clipped delivery, internal rhyme texture audible',
+      'Polish MC flow — conversational register, precise syllable placement over sparse groove',
+    ],
+    instr:[
+      '808 bass anchors the low-end pulse with occasional pitch glide; sparse piano voicing occupies the mid-frequency space; hi-hats carry rhythmic subdivision in 16th-note patterns',
+      'sub-kick provides low-frequency mass; sampled piano loop holds harmonic context; programmed snare snaps on beats 2 and 4 with moderate room reverb',
+      'bass synthesizer holds the groove below 80 Hz; muted electric piano comps sparsely; programmed percussion provides rhythmic texture without filling the space',
+    ],
+    prod:[
+      'dry, close-miked mix; minimal reverb tail; compressed mid-range; tight transients throughout',
+      'dusty sample texture over clean 808; low-reverb room; controlled dynamics; warm saturation on the drum bus',
+      'warm lo-fi saturation on drums; dry room ambience; bass-heavy spectral balance; subtle vinyl texture',
+    ],
+    arc:[
+      'verse builds syllable density into a stripped hook; final verse reaches peak density before the hook strips back to 808 and voice',
+      'each verse adds a harmonic layer; hook reduces arrangement to minimum; cold ending closes the last section',
+    ],
+  },
+  'Dark R&B': {
+    bpmLo:62, bpmHi:80,
+    keys:['B minor','E minor','F# minor','C# minor','G# minor','D# minor'],
+    modes:['natural minor','Phrygian','Aeolian'],
+    vocal:[
+      'dark R&B baritone with breathy lower register, controlled vibrato on held notes',
+      'moody mid-range voice with melismatic runs on sustained syllables, intimately miked',
+      'whispered lower-register delivery rising to full chest voice on the chorus peak',
+    ],
+    instr:[
+      '808 bass pulses under slow soul chords; Rhodes electric piano carries the harmonic weight; brushed snare sits deep in the negative space on the half-time grid',
+      'sub-bass drones below 60 Hz; pitched guitar stabs punctuate sparsely on off-beats; programmed drums maintain a half-time feel throughout',
+      'bass synth with heavy portamento carries a melodic line; atmospheric synth pad holds the harmonic field; rim shots mark the half-time pulse',
+    ],
+    prod:[
+      'reverb-washed snare sits deep in the mix; heavy sidechain on bass tied to kick; wide stereo imaging on the pad layer',
+      'intimate recording ambience; tape saturation on drum bus; lush reverb tail on vocal returns',
+      'dark, compressed mix; slow attack on kick; long reverb decay on snare and lead vocal',
+    ],
+    arc:[
+      'slow build from whispered verse to chest-voice chorus; bridge drops to near-silence before the final section restatement',
+      'verse intimacy contrasts with the chorus expansion; emotional arc moves from containment to release and back',
+    ],
+  },
+  'Trap': {
+    bpmLo:130, bpmHi:150,
+    keys:['C minor','F minor','G minor','A# minor','D minor','G# minor'],
+    modes:['natural minor','Phrygian'],
+    vocal:[
+      'trap baritone with mumbled lower-register delivery and aggressive ad-lib texture',
+      'dark trap voice, dry and close-miked, hard syllable attacks on downbeats',
+      'menacing mid-register rap voice over 808 pulse, minimal melodic movement',
+    ],
+    instr:[
+      '808 bass carries melodic weight with pitch glide and heavy saturation; hi-hats roll in 32nd-note clusters and triplet patterns over the verse; dark synth pad holds sparse harmonic context',
+      'sub-808 with glide slides dominates the low end; trap hi-hat rolls at 1/32 and 1/16 subdivisions; ominous string stab punctuates the downbeat sparsely',
+      'heavy 808 sub; sparse kick pattern; rapid hi-hat rhythms carry forward motion; dark piano chord on the downbeat of bar 1',
+    ],
+    prod:[
+      'heavy low-end compression; bright hi-hat transients over a dark sub layer; wide stereo on the synth',
+      'maximised 808 bass signal; minimal mid-range content; aggressive limiting on the master bus',
+      'loud drums, compressed and clipped; dark reverb tail on synths; crisp hi-hat transients at the top end',
+    ],
+    arc:[
+      'hook strips to 808 and voice only; verse layers build rhythmically then drop into the bare hook',
+      'dark intro establishes atmosphere; verses escalate intensity; bridge breakdown before the final hook restatement',
+    ],
+  },
+  'Miami Bass': {
+    bpmLo:126, bpmHi:140,
+    keys:['E minor','A minor','D minor','G minor','C minor'],
+    modes:['natural minor','blues'],
+    vocal:[
+      'call-and-response chant delivery over 808 bass impact; dry and room-close',
+      'aggressive chanted hook over bass drop; clipped vocal, minimal processing',
+    ],
+    instr:[
+      'Roland TR-808 bass drum delivers sub-frequency impact below 50 Hz; TR-808 cowbell and clave patterns provide rhythmic texture; bass synthesizer drives the melodic groove',
+      '808 kick punches below 60 Hz; bass synth sweeps upward on beat 1; sharp clap sits on beats 2 and 4',
+    ],
+    prod:[
+      'bass-boosted mix; dry club-room ambience; sharp percussive transients; minimal reverb',
+      'heavy low-end spectral emphasis; 808 kick and bass synth fill the sub range; bright mid percussion cuts through',
+    ],
+    arc:[
+      'groove-forward structure; bass drop defines each section entry; energy consistent throughout with rhythmic variation',
+      'rhythmic momentum sustained; drops punctuate section changes; hook is rhythmic rather than melodic',
+    ],
+  },
+  'Deep Dubstep': {
+    bpmLo:138, bpmHi:142,
+    keys:['D minor','G minor','E minor','F minor','A minor'],
+    modes:['natural minor','Phrygian'],
+    vocal:[
+      'heavily processed, pitch-shifted vocal fragments woven into the texture as atmosphere',
+      'sparse spoken phrases sit above the deep wobble bass; dry, close-miked',
+    ],
+    instr:[
+      'half-step wobble bass modulates below 120 Hz with a slow LFO sweep; sparse quarter-note kick; rim shot provides syncopated texture; atmospheric pad holds the harmonic field',
+      'deep reese bass wobbles on off-beats with filter automation; sub-kick punches once per bar; delayed snare creates a syncopated groove; reverb-washed synth pad fills the background',
+    ],
+    prod:[
+      'cavernous reverb on drums; extreme low-end emphasis; slow LFO modulation creates movement; sub frequency given full spectral space',
+      'sub-heavy mix; long reverb decay on all elements; tempo-synced delay on the bass filter sweep',
+    ],
+    arc:[
+      'intro builds atmospheric texture; first drop introduces full wobble bass; mid-section break releases tension; second drop adds harmonic complexity',
+      'spacious atmospheric intro; bass drop lands heavy; breakdown section; final drop with additional layer',
+    ],
+  },
+  'Wave': {
+    bpmLo:75, bpmHi:92,
+    keys:['G# minor','C# minor','F# minor','B minor','D# minor'],
+    modes:['natural minor','Phrygian','Lydian minor'],
+    vocal:[
+      'distant heavily-reverbed vocal drifting over atmospheric texture; autotune drift on sustained notes',
+      'melancholic sung-rap delivery — half-melody, half-spoken — with significant reverb and delay',
+    ],
+    instr:[
+      'layered synth pads create spatial depth over a sparse drum programme; 808 sub provides a rhythmic anchor; pitched vocal samples float through the mid-high register',
+      'atmospheric synth melody over slow 808 pulse; programmed hi-hats mark subdued rhythm; reverb-washed piano notes punctuate sparsely',
+    ],
+    prod:[
+      'large reverb and long delay create a cavernous space; heavy compression blurs transients; dreamy, saturated overall texture',
+      'dense spatial processing throughout; blurred drum transients; vocals saturated with reverb and shimmer',
+    ],
+    arc:[
+      'hypnotic locked groove throughout; subtle harmonic shifts create forward motion; no traditional drop — tension held constant',
+      'atmospheric intro; verses float over a steady pulse; instrumental section opens the arrangement before the final verse',
+    ],
+  },
+  'Phonk': {
+    bpmLo:130, bpmHi:148,
+    keys:['C minor','F minor','D minor','G minor','A# minor'],
+    modes:['natural minor','blues','Phrygian'],
+    vocal:[
+      'distorted, lo-fi rap vocal with heavy tape compression and extreme saturation',
+      'dark, menacing rap delivery over Memphis phonk groove; hoarse and aggressive',
+    ],
+    instr:[
+      'TR-808 cowbell pattern defines the rhythmic signature of the groove; distorted 808 bass slides through the low end; lo-fi drum loop provides gritty textural foundation; pitched Memphis sample supplies harmonic context',
+      'heavy 808 cowbell groove; distorted kick on beats 1 and 3; filtered, dusty soul sample loop; bass synth with extreme harmonic saturation',
+    ],
+    prod:[
+      'heavy tape saturation on everything; lo-fi filter roll-off above 10 kHz; extreme low-end distortion; grainy crackle texture throughout',
+      'warm distortion on drum bus; heavily compressed mix with clipping; vintage crackle and hiss texture; bass clipped for aggression',
+    ],
+    arc:[
+      'groove-forward repetitive structure; cowbell pattern defines the pulse; energy consistent with subtle harmonic shifts across sections',
+      'hypnotic loop structure; vocal verses punctuate the groove; instrumental break allows the texture to breathe before the final verse',
+    ],
+  },
+  'Instrumental Hip Hop': {
+    bpmLo:72, bpmHi:90,
+    keys:['F minor','C minor','G minor','D minor','A minor','E minor'],
+    modes:['natural minor','Dorian','Phrygian'],
+    vocal:[
+      'instrumental — no lead vocal; emotional narrative carried by the melodic instrument',
+      'no vocal; atmospheric texture and melodic development carry the intent',
+    ],
+    instr:[
+      'jazz-sourced piano loop provides harmonic texture; 808 sub-bass anchors the low end with minimal movement; brushed snare sits in warm negative space; muted brass stab punctuates downbeats sparsely',
+      'sampled Rhodes loop carries the melodic line; sub-kick and rim carry a boom-bap groove; bass guitar walks sparsely; vibraphone notes float in the upper register',
+    ],
+    prod:[
+      'warm tape-saturated production; light vinyl crackle texture; compressed, punchy drums; jazz-record ambience in the room sound',
+      'dusty sample aesthetic; boom-bap swing on the drum programme; warm low-end balance; minimal high-frequency content',
+    ],
+    arc:[
+      'melody-driven structure; harmonic changes mark section boundaries; groove sustained throughout with variation in instrumentation density',
+      'intro establishes the melodic theme; development section varies instrumentation; outro returns to the opening theme with reduced arrangement',
+    ],
+  },
+  'Drill': {
+    bpmLo:138, bpmHi:148,
+    keys:['F minor','C minor','G minor','A# minor','D minor'],
+    modes:['natural minor','Phrygian'],
+    vocal:[
+      'cold, precise drill flow — clipped delivery, ominous flat affect throughout',
+      'dark monotone rap voice with deliberate measured cadence; minimal melodic movement',
+    ],
+    instr:[
+      'sliding 808 bass provides menacing low-end movement with pitch drop across bars; sparse kick pattern creates rhythmic tension; rolling hi-hats at 1/16 subdivisions; dark piano chord on bar 1',
+      'gliding 808 bass with programmed pitch descent; slow deliberate kick pattern; trap hi-hat rolls; haunting string sample sits in the background',
+    ],
+    prod:[
+      'ominous, dark mix; sparse arrangement allows 808 bass full spectral space; minimal reverb; cold and clinical overall character',
+      'cold, sterile production; dry drums; gliding 808 bass functions as the main melodic hook; compressed and tight',
+    ],
+    arc:[
+      'menacing energy from intro through outro; verses escalate lyrical tension; hook strips to 808 and sparse percussion only',
+      'consistent dark pressure throughout; verse adds rhythmic density; hook reduces to minimal groove and 808',
+    ],
+  },
+  'Lo-fi Hip Hop': {
+    bpmLo:70, bpmHi:88,
+    keys:['F major','C major','G minor','D minor','A minor','Bb major'],
+    modes:['major','Dorian','natural minor'],
+    vocal:[
+      'no lead vocal or soft distant vocal sample floating in reverb',
+      'instrumental — warm, intimate atmosphere carries the emotional register',
+    ],
+    instr:[
+      'chopped jazz piano sample provides harmonic texture over a dusty drum loop; bass guitar walks lazily in the low-mid register; occasional vinyl crackle and tape hiss provide texture',
+      'sampled Rhodes chords; soft programmed kick and snare with swing; acoustic bass or bass synth with warm tone; rain or ambient texture in background',
+    ],
+    prod:[
+      'warm, lo-fi aesthetic throughout; tape saturation; vinyl crackle; soft drum compression; low-pass filtered everything above 12 kHz',
+      'cosy, intimate production space; slow attack on all elements; warm low-end; no sharp transients',
+    ],
+    arc:[
+      'no dramatic arc — sustained meditative groove; variation through melodic changes rather than energy shifts',
+      'loop-based structure with subtle variation; no traditional chorus — mood consistent throughout',
+    ],
+  },
+};
 
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const el = document.createElement('textarea');
-    el.value = text;
-    el.style.cssText = 'position:fixed;opacity:0';
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
+/* ═══════════════════════════════════════════════════════════
+   MOOD MODIFIERS
+═══════════════════════════════════════════════════════════ */
+const MOOD_MODS = {
+  dark:         { adj:'dark',          textureMod:'low-frequency spectral emphasis, ominous harmonic content',        arcPfx:'cold, contained energy —' },
+  melancholic:  { adj:'melancholic',   textureMod:'slow-attack dynamics, intentional empty space in the arrangement', arcPfx:'emotional weight accumulates —' },
+  aggressive:   { adj:'aggressive',    textureMod:'forward-mixed drums, clipped bass transients, minimal reverb',     arcPfx:'relentless forward pressure —' },
+  hypnotic:     { adj:'hypnotic',      textureMod:'loop-based hypnotic structure, subtle variation sustains focus',    arcPfx:'locked groove throughout —' },
+  cinematic:    { adj:'cinematic',     textureMod:'wide stereo imaging, orchestral register depth, dynamic contrast',  arcPfx:'narrative arc —' },
+  introspective:{ adj:'introspective', textureMod:'intimate close-miked texture, space allowed to breathe',           arcPfx:'inward, contemplative —' },
+  cold:         { adj:'cold',          textureMod:'clinical production, controlled dynamics, sterile arrangement',     arcPfx:'flat affect —' },
+  paranoid:     { adj:'paranoid',      textureMod:'dissonant harmonic tension, glitch and distortion as texture',      arcPfx:'mounting tension, no release —' },
+  euphoric:     { adj:'euphoric',      textureMod:'rising harmonic motion, wide reverb on chorus, energy climax',     arcPfx:'ascending arc to —' },
+  spiritual:    { adj:'spiritual',     textureMod:'ceremonial reverb space, drone foundation, chant-adjacent texture', arcPfx:'meditative, ritual —' },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   LYRIC POOLS  — pre-written lines per register & language.
+   [KW] = inject concept keyword (nominative).
+   Lines are written without AI-slop; register-specific imagery.
+═══════════════════════════════════════════════════════════ */
+const PL = {
+  medical: {
+    verse: [
+      '[KW] pod skalpelem traci kontur — identyfikacja na podstawie kontekstu',
+      'każde [KW] to wynik bez skali referencyjnej — ustal własną normę',
+      'szew krzyżowy na [KW] — szybciej się szyje niż mówi co się zdziało',
+      'amputacja [KW] zostawia ból fantomowy — nic nie boli tak jak to co usunięto',
+      '[KW] w morfologii poza zakresem — lekarz mówi: obserwacja, wróć za miesiąc',
+      'obserwacja: słowo dla tych co czekają aż stanie się coś nieodwracalnego',
+      'dawka [KW] — toksyczna przy długotrwałej ekspozycji bez objawów ostrzegawczych',
+      'preparat histologiczny [KW] — tak to wygląda od wewnątrz bez etykietki',
+      'kontrast ujawnia [KW] tam gdzie pierwsze skany nie pokazały nic',
+      'izolacja [KW] w warunkach sterylnych — kontaminacja i tak następuje',
+      'protokół: oczyszczenie, tamowanie, zamknięcie — [KW] w kartonowym pudełku na końcu',
+      'anestezja na [KW] — czujesz wszystko, tylko z sześciosekundowym opóźnieniem',
+      'biopsja [KW] — próbka pobrana, wynik za dwa tygodnie, tymczasem żyj normalnie',
+      'resekcja [KW] z marginesem — nie dotykaj reszty, może należy do kogoś innego',
+      '[KW] sklasyfikowane jako łagodne — nie informuj o zmianach w zachowaniu pacjenta',
+      'transfuzja [KW] — grupę krwi sprawdzono, dawca anonimowy jak zawsze',
+      'diagnoza: [KW] z powikłaniami — rokowanie zależy od tego kto pyta',
+    ],
+    hook: [
+      '[KW] bez antidotum',
+      'diagnoza: [KW] — rokowanie: niepewne',
+      'każde [KW] wraca z odsetkami',
+      '[KW] w fazie terminalnej — obserwacja wstrzymana',
+      'wytnij [KW] — rośnie z powrotem gdzie indziej',
+      '[KW] — marginesy nieczyste',
+    ],
+    bridge: [
+      'wyniki wróciły — [KW] wszędzie gdzie byłeś',
+      'protokół nie przewidział [KW] — uzupełnij formularz sam',
+      '[KW] w karcie pacjenta jako adnotacja na marginesie',
+      'nie ma antidotum na [KW] — jest tylko monitorowanie',
+    ],
+  },
+  chemical: {
+    verse: [
+      '[KW] w roztworze przesyconym — krystalizacja to kwestia czasu i jednego drgnięcia',
+      'katalizator [KW] przyspiesza reakcję o rząd wielkości — cofnięcia nie ma',
+      '[KW] w stanie gazowym — żadnej masy, żadnej formy, nadal wypełnia każde pomieszczenie',
+      'pH [KW] — poza zakresem w którym cokolwiek przeżywa bez trwałego uszkodzenia',
+      '[KW] destylowane po raz trzeci — zostaje tylko to co odmawia odparowania w ciemności',
+      'reakcja egzotermiczna: [KW] i [KW] w jednym naczyniu — ciepło topi strukturę od środka',
+      'stężenie [KW] rośnie systematycznie — detektor milczy, skalibrowany na coś innego',
+      'rozpad [KW] — produkty końcowe są bardziej toksyczne niż substrat wyjściowy',
+      'równanie [KW] nie bilansuje się — ale reakcja zachodzi mimo wszystko',
+      'półokres [KW] — dwukrotnie dłuższy niż deklaruje karta charakterystyki',
+      'izotop [KW] — promieniuje subtelnie, przez lata, bez żadnego widocznego ostrzeżenia',
+      '[KW] w fazie stałej — aplikuj ciepło i obserwuj jak zmienia się wszystko poza formą',
+      'ekstrakcja [KW] w środowisku kwaśnym — oddzielasz to co chcesz od tego co zostało',
+      'sublimacja [KW] — ze stałego prosto w gazowy, fazy ciekłej nie było nigdy',
+    ],
+    hook: [
+      '[KW] — półokres: nieskończoność',
+      'katalizator był [KW] — nie ja',
+      'stężenie [KW] przekroczone',
+      'reakcja [KW] — nieodwracalna',
+      '[KW] w roztworze — wytrącanie nieuchronne',
+    ],
+    bridge: [
+      '[KW] jako produkt uboczny — nie planowany, nie kontrolowany',
+      'równowaga reakcji [KW] przesunięta w lewo — bez odwrotu',
+      'izoluj [KW] — reszta jest skażona',
+      'temperatura topnienia [KW] — niższa niż myślałem, wyższa niż wytrzymam',
+    ],
+  },
+  culinary: {
+    verse: [
+      '[KW] zredukowane na wolnym ogniu — bez wody, bez nazwy, samo siebie na dnie garnka',
+      'macerujesz [KW] w ciemności dopóki smak nie wycieka przez każdy por skóry',
+      'szczypta [KW] zmienia proporcje całego dania — od tej chwili nic nie smakuje tak samo',
+      '[KW] karmelizowane w zbyt wysokiej temperaturze — nie do uratowania, zostaw je',
+      'emulsja z [KW] — niestabilna, rozchodzi się przy pierwszym gwałtownym uderzeniu',
+      '[KW] przefermentowane — smak kwasowy, odurzający, zepsuty w precyzyjnie odpowiedni sposób',
+      'brunoise z [KW] — drobno, równo, precyzyjnie, nikt nie widzi czego się pozbywasz',
+      'redukcja [KW] do glazury — coś musiało spłonąć w tym procesie żebyś miał to co chcesz',
+      'blanszowanie [KW] — przez chwilę kolor jest intensywniejszy, potem niezmiennie szarzeje',
+      'marynata z [KW] — działa na tkankę przez noc, rano masz coś zupełnie innego w rękach',
+      '[KW] sous vide przez siedem godzin — zmiana jest głęboka i niewidoczna na pierwszy rzut',
+      'ekstrakcja [KW] zimną wodą — tylko aktywne składniki, resztę wyrzuć bez żalu',
+      'soliwa [KW] cierpliwie — osmoza wyciągnie to czego nie chciałeś dawać',
+      'caramelizacja [KW] zaczyna się zanim zauważysz — do tego momentu jest za późno',
+    ],
+    hook: [
+      '[KW] — do podania na zimno',
+      'redukcja [KW] — zostało to co esencjalne',
+      'degustacja [KW] zostaje jako posmak',
+      'przepis bez [KW] nie smakuje jak powinien',
+      '[KW] — podane, nie do cofnięcia',
+    ],
+    bridge: [
+      'receptura [KW] — jeden składnik za dużo, całość do wyrzucenia',
+      '[KW] przekarmelizowane — gorzkie ale to jedyne co masz',
+      'emulsja [KW] rozeszła się — wymieszaj mocniej albo zaakceptuj',
+      'pozostał tylko posmak [KW] — bez źródła, bez powrotu',
+    ],
+  },
+};
+
+const EN = {
+  medical: {
+    verse: [
+      '[KW] under the scope — margins unclear, no clean resection possible from this angle',
+      'I sutured [KW] with cross-stitches because the protocol demanded closure',
+      'phantom pain after [KW] — you remove the source, the signal persists on its own schedule',
+      'biopsy result for [KW]: benign, monitor, report behavioral changes as they develop',
+      'anesthesia for [KW] — you feel everything, with a six-second delay between cause and signal',
+      'contrast agent revealed [KW] where the first three scans showed nothing of note',
+      'contraindicated: [KW] at therapeutic doses, long-term, without visible warning signs',
+      '[KW] in the pathology tray — that is what it looks like without the surrounding context',
+      'resection of [KW] with clear margins — do not disturb the surrounding tissue',
+      'full panel returned — [KW] elevated, the rest of the system compensating around it',
+      'sterile field, controlled environment — [KW] found a way to contaminate it anyway',
+      '[KW] classified as benign: watch and wait, do not alter your behavior based on findings',
+      'they isolated [KW] and called it unremarkable — the report said observation only',
+    ],
+    hook: [
+      '[KW] — no antidote listed',
+      'cut [KW] out — it grows back different',
+      'the diagnosis was [KW] the whole time',
+      '[KW] stays in the bloodstream',
+      'no clean margins on [KW]',
+    ],
+    bridge: [
+      'results came back — [KW] everywhere you have been',
+      'the protocol did not account for [KW] — amend the form yourself',
+      '[KW] noted in the patient record as a marginal annotation',
+      'there is no antidote for [KW] — there is only extended monitoring',
+    ],
+  },
+  chemical: {
+    verse: [
+      '[KW] at the saturation point — crystallization begins with a single disturbance',
+      'half-life of [KW]: longer than the warranty, shorter than the structural damage it causes',
+      'I distilled [KW] to its active compound and poured off everything else without looking',
+      '[KW] in the gaseous phase — no mass, no form, still occupies every room it enters',
+      'pH of [KW] falls outside the range where anything survives the exposure intact',
+      'catalytic [KW] — accelerates the reaction by an order of magnitude, absent from the products',
+      'unstable isotope of [KW] — emits slowly over years with no visible external warning',
+      '[KW] in supersaturated solution — one disturbance and everything precipitates at once',
+      'exothermic reaction: [KW] combined with [KW] — heat damages the structure from inside',
+      'the decay products of [KW] are more toxic than the source compound ever was',
+    ],
+    hook: [
+      '[KW] — half-life: indefinite',
+      'I calculated the [KW] dose and took the risk',
+      '[KW]: the reaction does not reverse',
+      'the catalyst was [KW] — I was just the vessel',
+    ],
+    bridge: [
+      '[KW] as byproduct — unplanned, uncontrolled, unaccounted for',
+      'the equilibrium of [KW] shifted left and stayed there',
+      'isolate [KW] — the rest of the solution is contaminated',
+      'the melting point of [KW] — lower than I expected, higher than I can sustain',
+    ],
+  },
+  culinary: {
+    verse: [
+      '[KW] reduced on low heat — no water, no label, only itself at the bottom of the pan',
+      'I macerated [KW] in darkness until the flavor bled through on its own terms',
+      'a pinch of [KW] shifts the balance of the whole dish from this point forward',
+      '[KW] caramelized past the point of recovery — leave it, move on to something else',
+      'the [KW] emulsion is unstable — it separates on first impact, no second chance',
+      '[KW] fermented past the intended time — sour, disorienting, ruined in the right way',
+      'brunoise of [KW] — fine, even, deliberate — no one sees what you are removing',
+      'reduction of [KW] to glaze — something had to burn in the process to get here',
+      'I blanched [KW] — the color intensified briefly, then grayed as expected',
+      '[KW] in brine overnight — osmosis pulls what you were not ready to give',
+      '[KW] sous vide for seven hours — the change is structural and invisible',
+      'extract [KW] with cold water — active compounds only, discard the remainder',
+    ],
+    hook: [
+      '[KW] — served cold',
+      'reduction of [KW]: only the essential remains',
+      'the aftertaste of [KW] does not leave',
+      'the recipe does not hold without [KW]',
+    ],
+    bridge: [
+      'one ingredient too many — the whole [KW] goes in the bin',
+      '[KW] over-caramelized: bitter, but it is all that is left',
+      'the [KW] emulsion broke — stir harder or accept the separation',
+      'only the aftertaste of [KW] persists — no source, no return',
+    ],
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   ANADIPLOSIS PAIRS  — end of line A echoes at start of line B
+═══════════════════════════════════════════════════════════ */
+const ANA_PL = [
+  ['obserwujesz [KW] — obserwacja to tylko sposób na to żeby nic nie robić', 'nic nie robić jest decyzją tak samo jak każda inna decyzja w tej sytuacji'],
+  ['amputacja [KW] — reszta ciała idzie za tym co zostało usunięte', 'usunięte zostawia więcej miejsca niż kiedykolwiek było potrzeba'],
+  ['redukcja [KW] do esencji — esencja okazuje się nieznośna w czystej postaci', 'nieznośna jest prawda o składnikach kiedy nie ma już czego ominąć wzrokiem'],
+  ['stężenie [KW] rośnie — rośnie szybciej niż którykolwiek sensor jest w stanie zarejestrować', 'zarejestrować to za dużo — wystarczy że się wie bez dokumentacji'],
+  ['diagnoza: [KW] — diagnoza zawsze mówi więcej o tym kto ją stawia niż o pacjencie', 'pacjent słucha i przekłada wyniki na język który jako jedyny rozumie'],
+];
+const ANA_EN = [
+  ['[KW] enters the bloodstream — the bloodstream carries everything eventually to where it should not be', 'where it should not be is always where it ends up regardless of the protocol'],
+  ['I cut [KW] out — cutting requires knowing precisely where the boundary ends', 'where it ends is never where the diagram indicated it would be'],
+  ['the catalyst was [KW] — [KW] appears nowhere in the final product list', 'the final product list is incomplete by design'],
+];
+
+/* ═══════════════════════════════════════════════════════════
+   STRUCTURE DEFINITIONS  — ordered section specs
+═══════════════════════════════════════════════════════════ */
+const STRUCT_DEFS = {
+  'rap-standard': [
+    { tag:'Verse 1',  cue:'Dense Flow',    type:'verse',  lines:8 },
+    { tag:'Hook',     cue:'Stripped',       type:'hook',   lines:4 },
+    { tag:'Verse 2',  cue:'Building',       type:'verse',  lines:8 },
+    { tag:'Hook',     cue:null,             type:'hook',   lines:4 },
+    { tag:'Verse 3',  cue:'Peak Density',   type:'verse',  lines:8 },
+    { tag:'Hook',     cue:'Final',          type:'hook',   lines:4 },
+  ],
+  'trap': [
+    { tag:'Intro',    cue:null,             type:'intro',  lines:2 },
+    { tag:'Verse 1',  cue:null,             type:'verse',  lines:8 },
+    { tag:'Hook',     cue:'Stripped',       type:'hook',   lines:4 },
+    { tag:'Verse 2',  cue:'Building',       type:'verse',  lines:8 },
+    { tag:'Hook',     cue:'Full',           type:'hook',   lines:4 },
+    { tag:'Bridge',   cue:'Breakdown',      type:'bridge', lines:4 },
+    { tag:'Hook',     cue:'Cold Ending',    type:'hook',   lines:4 },
+  ],
+  'rnb-full': [
+    { tag:'Verse 1',    cue:'Whispered',    type:'verse',     lines:6 },
+    { tag:'Pre-Chorus', cue:'Rising',       type:'prechorus', lines:4 },
+    { tag:'Chorus',     cue:'Big Chorus',   type:'hook',      lines:4 },
+    { tag:'Verse 2',    cue:'Building',     type:'verse',     lines:6 },
+    { tag:'Pre-Chorus', cue:null,           type:'prechorus', lines:4 },
+    { tag:'Chorus',     cue:null,           type:'hook',      lines:4 },
+    { tag:'Bridge',     cue:'Stripped',     type:'bridge',    lines:4 },
+    { tag:'Chorus',     cue:'Final Chorus', type:'hook',      lines:4 },
+    { tag:'Outro',      cue:'Cold Ending',  type:'outro',     lines:2 },
+  ],
+  'wave': [
+    { tag:'Intro',    cue:'Atmospheric',    type:'intro',  lines:2 },
+    { tag:'Verse 1',  cue:null,             type:'verse',  lines:8 },
+    { tag:'Drop',     cue:'First Drop',     type:'hook',   lines:4 },
+    { tag:'Verse 2',  cue:'Building',       type:'verse',  lines:8 },
+    { tag:'Drop',     cue:'Full Drop',      type:'hook',   lines:4 },
+    { tag:'Outro',    cue:'Fade',           type:'outro',  lines:3 },
+  ],
+  'extended': [
+    { tag:'Intro',      cue:null,           type:'intro',     lines:3 },
+    { tag:'Verse 1',    cue:'Dense',        type:'verse',     lines:8 },
+    { tag:'Pre-Chorus', cue:'Rising',       type:'prechorus', lines:4 },
+    { tag:'Chorus',     cue:'Big Chorus',   type:'hook',      lines:4 },
+    { tag:'Verse 2',    cue:'Building',     type:'verse',     lines:8 },
+    { tag:'Pre-Chorus', cue:null,           type:'prechorus', lines:4 },
+    { tag:'Chorus',     cue:null,           type:'hook',      lines:4 },
+    { tag:'Bridge',     cue:'Breakdown',    type:'bridge',    lines:4 },
+    { tag:'Chorus',     cue:'Final',        type:'hook',      lines:4 },
+    { tag:'Outro',      cue:'Cold Ending',  type:'outro',     lines:2 },
+  ],
+  'minimal': [
+    { tag:'Verse 1',  cue:'Poem',           type:'verse',  lines:10 },
+    { tag:'Refrain',  cue:null,             type:'hook',   lines:3  },
+    { tag:'Verse 2',  cue:'Deeper',         type:'verse',  lines:10 },
+    { tag:'Refrain',  cue:'Final',          type:'hook',   lines:3  },
+  ],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   KEYWORD EXTRACTION
+═══════════════════════════════════════════════════════════ */
+const PL_STOP = new Set('a i w z na do że się jest to nie jak ale czy przez po przy od za bez nad pod przed między który która które oraz ten ta ze do'.split(' '));
+const EN_STOP = new Set('a an the and or but in on at to for of with by from as into that this is are was were be been have has had do does did will would could should may might not no it its the'.split(' '));
+
+function extractKeywords(text) {
+  const tokens = text.toLowerCase()
+    .replace(/[^\w\sąćęłńóśźżàâäéèêëïîôùûüÿæœ]/g,' ')
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !PL_STOP.has(w) && !EN_STOP.has(w));
+  // deduplicate
+  const seen = new Set();
+  return tokens.filter(w => { if(seen.has(w)) return false; seen.add(w); return true; }).slice(0,8);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INJECT keyword into a template line
+═══════════════════════════════════════════════════════════ */
+function inject(line, kw) {
+  if(!line.includes('[KW]')) return line;
+  // Replace first [KW] with kw, second [KW] (if any) with kw too
+  return line.replace(/\[KW\]/g, kw);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GENERATE STYLE PROMPT
+═══════════════════════════════════════════════════════════ */
+function generateStyle({ genres, mood, language, structure, rng }) {
+  const primaryGenre = genres.length ? genres[0] : 'Polish Rap';
+  const modifierGenre = genres.length > 1 ? genres[1] : null;
+  const gd = GENRE_DATA[primaryGenre] || GENRE_DATA['Polish Rap'];
+  const md = MOOD_MODS[mood] || MOOD_MODS['dark'];
+
+  const bpm = `${rng.int(gd.bpmLo, Math.round((gd.bpmLo+gd.bpmHi)/2))}–${rng.int(Math.round((gd.bpmLo+gd.bpmHi)/2), gd.bpmHi)} BPM`;
+  const key = `${rng.pick(gd.keys)}, ${rng.pick(gd.modes)}`;
+  const vocal = rng.pick(gd.vocal);
+  const instr = rng.pick(gd.instr);
+  const prod = rng.pick(gd.prod);
+  const arc = rng.pick(gd.arc);
+
+  let genreStr = primaryGenre;
+  if(modifierGenre && modifierGenre !== primaryGenre) genreStr += `, ${modifierGenre} elements`;
+
+  let langNote = '';
+  if(language === 'polish') langNote = 'Polish-language lyrics, delivery in Polish';
+  else if(language === 'bilingual') langNote = 'bilingual Polish/English — Polish verses, English hook';
+  else langNote = 'English-language delivery';
+
+  const parts = [
+    genreStr,
+    bpm,
+    key,
+    `${md.adj} emotional register`,
+    vocal,
+    instr,
+    md.textureMod,
+    prod,
+    `${md.arcPfx} ${arc}`,
+    langNote,
+  ];
+
+  let style = parts.join('; ');
+  if(style.length > 899) style = style.slice(0,896) + '...';
+  return style;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION GENERATORS
+═══════════════════════════════════════════════════════════ */
+function pickLine(pool, kw, rng) {
+  const line = rng.pick(pool);
+  return kw ? inject(line, kw) : line.replace(/\[KW\] ?—? ?/g,'').replace(/^ ?—? ?/, '').trim() || line;
+}
+
+function makeVerseLines(count, lang, reg, keywords, rng, useAna) {
+  const pool = lang === 'english' ? EN[reg]?.verse : PL[reg]?.verse;
+  if(!pool) return [];
+  const kws = keywords.length ? rng.shuffle(keywords) : ['—'];
+  const lines = [];
+  let kwIdx = 0;
+  let insertedAna = false;
+
+  // possibly insert one anadiplosis pair
+  const anaPairs = lang === 'english' ? ANA_EN : ANA_PL;
+  const anaPair = useAna && rng.next() > 0.4 ? rng.pick(anaPairs) : null;
+  const anaPos = anaPair ? rng.int(1, Math.max(1, count - 3)) : -1;
+
+  for(let i = 0; i < count; i++) {
+    if(anaPair && i === anaPos && !insertedAna) {
+      const kw = kws[kwIdx % kws.length];
+      lines.push(inject(anaPair[0], kw));
+      lines.push(inject(anaPair[1], kw));
+      kwIdx++;
+      i++; // consumed two lines
+      insertedAna = true;
+      continue;
+    }
+    const kw = kws[kwIdx % kws.length];
+    const usedPool = pool.filter(l => !lines.includes(inject(l, kw)));
+    const src = usedPool.length ? usedPool : pool;
+    const ln = rng.pick(src);
+    lines.push(inject(ln, kw));
+    kwIdx++;
+  }
+  return lines.slice(0, count);
+}
+
+function makeHookLines(count, lang, reg, keywords, rng) {
+  const pool = lang === 'english' ? EN[reg]?.hook : PL[reg]?.hook;
+  if(!pool) return [];
+  const kw = keywords.length ? rng.pick(keywords) : '';
+  const base = kw ? inject(rng.pick(pool), kw) : rng.pick(pool).replace(/\[KW\]/g,'—');
+  const lines = [base];
+  // repeat or add variations
+  while(lines.length < count) {
+    const extra = pool.filter(l => !lines.map(x=>x).includes(l.replace('[KW]',kw)));
+    const next = extra.length ? inject(rng.pick(extra), kw) : lines[0];
+    lines.push(next);
+  }
+  return lines.slice(0,count);
+}
+
+function makeBridgeLines(count, lang, reg, keywords, rng) {
+  const pool = lang === 'english' ? EN[reg]?.bridge : PL[reg]?.bridge;
+  if(!pool || !pool.length) return makeHookLines(count, lang, reg, keywords, rng);
+  const kw = keywords.length ? rng.pick(keywords) : '';
+  const lines = [];
+  for(let i=0;i<count;i++){
+    const unused = pool.filter(l=>!lines.includes(inject(l,kw)));
+    const src = unused.length ? unused : pool;
+    lines.push(inject(rng.pick(src), kw));
+  }
+  return lines.slice(0,count);
+}
+
+function makePreChorusLines(count, lang, reg, keywords, rng) {
+  // Pre-chorus: transitional — use verse pool but shorter lines, rising tension note
+  const pool = lang === 'english' ? EN[reg]?.verse : PL[reg]?.verse;
+  if(!pool) return [];
+  const kw = keywords.length ? rng.pick(keywords) : '';
+  const lines = [];
+  for(let i=0;i<count;i++){
+    const unused = pool.filter(l=>!lines.includes(inject(l,kw)));
+    const src = unused.length ? unused : pool;
+    lines.push(inject(rng.pick(src), kw));
+  }
+  return lines.slice(0,count);
+}
+
+function makeIntroLines(count, lang, keywords, rng) {
+  if(lang === 'english') {
+    const opts = [
+      keywords.length ? `(${keywords[0]} — before everything else)` : '(ambient space — no voice yet)',
+      '(sound establishes before the first word)',
+      `(${keywords[0] || 'the premise'} as a single image before the verse enters)`,
+    ];
+    return [rng.pick(opts)];
+  } else {
+    const opts = [
+      keywords.length ? `(${keywords[0]} — cisza zanim cokolwiek zostanie powiedziane)` : '(przestrzeń dźwiękowa — bez głosu)',
+      '(dźwięk układa się zanim padnie pierwsze słowo)',
+      `(${keywords[0] || 'temat'} jako pojedynczy obraz zanim wers wejdzie)`,
+    ];
+    return [rng.pick(opts)];
   }
 }
 
-/* ──────────── COMPONENTS ──────────── */
+function makeOutroLines(count, lang, reg, keywords, rng) {
+  const kw = keywords.length ? keywords[0] : '';
+  if(lang === 'english') {
+    const opts = [
+      kw ? `(${kw} — final statement, no resolution)` : '(no resolution — the groove fades)',
+      kw ? `${kw}.` : '—',
+      '(silence earns its place here)',
+    ];
+    return [rng.pick(opts)];
+  } else {
+    const opts = [
+      kw ? `(${kw} — ostatnie słowo, bez rozwiązania)` : '(bez rozwiązania — groove zanika)',
+      kw ? `${kw}.` : '—',
+      '(cisza tu ma znaczenie)',
+    ];
+    return [rng.pick(opts)];
+  }
+}
 
+/* ═══════════════════════════════════════════════════════════
+   PICK REGISTER from notes/concept or randomise
+═══════════════════════════════════════════════════════════ */
+function detectRegister(text, rng) {
+  const t = text.toLowerCase();
+  if(/chirurg|szpital|hospital|medic|biops|morfolog|skalpel|anestez|diagnoz|pacjen|lekar|krew|blood|wound|surgery/.test(t)) return 'medical';
+  if(/chemic|reakcja|reaction|katali|stężen|roztwor|solution|kwas|acid|izotop|destyl|dissolv/.test(t)) return 'chemical';
+  if(/gotow|gotuj|kuchn|kitchen|recipe|przepis|redukcj|smak|taste|flavor|cuisine|marynata|ferment|distil/.test(t)) return 'culinary';
+  return rng.pick(['medical','chemical','culinary']);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GENERATE LYRICS
+═══════════════════════════════════════════════════════════ */
+function generateLyrics({ concept, genres, language, structure, notes, rng }) {
+  const allText = concept + ' ' + notes;
+  const keywords = extractKeywords(allText);
+  const reg = detectRegister(allText, rng);
+
+  // Determine which language pool to use
+  // bilingual: verses Polish, hooks English
+  const verseLang  = language === 'english' ? 'english' : 'polish';
+  const hookLang   = language === 'bilingual' ? 'english' : verseLang;
+
+  const sections = STRUCT_DEFS[structure] || STRUCT_DEFS['rap-standard'];
+  const output = [];
+
+  sections.forEach((sec, idx) => {
+    const tag = sec.cue ? `[${sec.tag} - ${sec.cue}]` : `[${sec.tag}]`;
+    output.push('');
+    output.push(tag);
+
+    let lines = [];
+    switch(sec.type) {
+      case 'verse':
+        lines = makeVerseLines(sec.lines, verseLang, reg, keywords, rng, idx < 2);
+        break;
+      case 'hook':
+      case 'chorus':
+      case 'refrain':
+        lines = makeHookLines(sec.lines, hookLang, reg, keywords, rng);
+        break;
+      case 'bridge':
+        lines = makeBridgeLines(sec.lines, verseLang, reg, keywords, rng);
+        break;
+      case 'prechorus':
+        lines = makePreChorusLines(sec.lines, verseLang, reg, keywords, rng);
+        break;
+      case 'intro':
+        lines = makeIntroLines(sec.lines, verseLang, keywords, rng);
+        break;
+      case 'outro':
+        lines = makeOutroLines(sec.lines, verseLang, reg, keywords, rng);
+        break;
+      default:
+        lines = makeVerseLines(sec.lines, verseLang, reg, keywords, rng, false);
+    }
+
+    output.push(...lines);
+  });
+
+  return output.join('\n').replace(/^\n/, '').trim();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TITLE GENERATOR
+═══════════════════════════════════════════════════════════ */
+function generateTitle({ concept, language, rng }) {
+  const kws = extractKeywords(concept);
+  const kw = kws.length ? rng.pick(kws) : '';
+
+  if(language === 'english') {
+    const pats = [
+      kw ? `Residual ${kw.charAt(0).toUpperCase()+kw.slice(1)}` : 'No Clean Margins',
+      kw ? `${kw.charAt(0).toUpperCase()+kw.slice(1)} Protocol` : 'Controlled Exposure',
+      kw ? `Half-Life of ${kw.charAt(0).toUpperCase()+kw.slice(1)}` : 'Saturated',
+      kw ? `${kw.charAt(0).toUpperCase()+kw.slice(1)} at Saturation` : 'Phantom Signal',
+      kw ? `The ${kw.charAt(0).toUpperCase()+kw.slice(1)} Procedure` : 'Contraindicated',
+    ];
+    return rng.pick(pats);
+  }
+  if(language === 'bilingual') {
+    const pats = [
+      kw ? `${kw.charAt(0).toUpperCase()+kw.slice(1)} / No Antidote` : 'Bez Antidotum / No Antidote',
+      kw ? `Stężenie ${kw.charAt(0).toUpperCase()+kw.slice(1)}` : 'Saturated',
+      kw ? `${kw.charAt(0).toUpperCase()+kw.slice(1)} — Half-Life` : 'Redukcja / Reduction',
+    ];
+    return rng.pick(pats);
+  }
+  // Polish
+  const cap = kw ? kw.charAt(0).toUpperCase()+kw.slice(1) : '';
+  const pats = [
+    cap ? `Stężenie ${cap}` : 'Stężenie Bez Nazwy',
+    cap ? `Morfologia ${cap}` : 'Morfologia Wyników',
+    cap ? `Redukcja ${cap}` : 'Redukcja Do Esencji',
+    cap ? `Preparat ${cap}` : 'Preparat Anonimowy',
+    cap ? `${cap} W Roztworze` : 'W Roztworze Przesyconym',
+    cap ? `Protokół ${cap}` : 'Protokół Bez Numeru',
+    cap ? `Półokres ${cap}` : 'Półokres Nieskończoności',
+    cap ? `${cap} — Bez Antidotum` : 'Bez Antidotum',
+  ];
+  return rng.pick(pats);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MASTER GENERATOR
+═══════════════════════════════════════════════════════════ */
+function generate({ concept, genres, mood, language, structure, notes }) {
+  const seed = Date.now() ^ (Math.random() * 0x7fffffff | 0);
+  const rng = new RNG(seed);
+
+  const title  = generateTitle({ concept, language, rng });
+  const style  = generateStyle({ genres, mood, language, structure, rng });
+  const lyrics = generateLyrics({ concept, genres, language, structure, notes, rng });
+
+  return { title, style, lyrics };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UI CONSTANTS
+═══════════════════════════════════════════════════════════ */
+const GENRES = [
+  'Polish Rap','Dark R&B','Trap','Miami Bass',
+  'Deep Dubstep','Wave','Phonk','Instrumental Hip Hop',
+  'Drill','Lo-fi Hip Hop',
+];
+const MOODS = [
+  {v:'dark',       l:'Mroczny / Dark'},
+  {v:'melancholic',l:'Melancholijny / Melancholic'},
+  {v:'aggressive', l:'Agresywny / Aggressive'},
+  {v:'hypnotic',   l:'Hipnotyczny / Hypnotic'},
+  {v:'cinematic',  l:'Kinematograficzny / Cinematic'},
+  {v:'introspective',l:'Introspekcyjny / Introspective'},
+  {v:'cold',       l:'Zimny / Cold'},
+  {v:'paranoid',   l:'Paranoiczny / Paranoid'},
+  {v:'euphoric',   l:'Euforyczny / Euphoric'},
+  {v:'spiritual',  l:'Duchowy / Spiritual'},
+];
+const STRUCTURES = [
+  {id:'rap-standard', l:'Rap Standard: V → Hook × 3'},
+  {id:'trap',         l:'Trap: Intro → V → Hook × 2 + Bridge'},
+  {id:'rnb-full',     l:'Dark R&B: V → Pre-C → Chorus × 2 + Bridge'},
+  {id:'wave',         l:'Wave/Phonk: Intro → V → Drop × 2 + Outro'},
+  {id:'extended',     l:'Extended: Intro → V → PC → C × 2 + Bridge + Outro'},
+  {id:'minimal',      l:'Minimal: V → Refrain × 2'},
+];
+const LANG_OPTS = [
+  {v:'polish',    t:'Polski',                  d:'Całkowicie po polsku. Naturalna metryka, autentyczny slang.'},
+  {v:'english',   t:'English',                 d:'Full English, optional Polish phrase as contrast.'},
+  {v:'bilingual', t:'Dwujęzyczny / Bilingual', d:'Polish verses + English hooks — strategic code-switching.'},
+];
+
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTS
+═══════════════════════════════════════════════════════════ */
 function CopyButton({ text, label }) {
-  const [copied, setCopied] = useState(false);
+  const [ok, setOk] = useState(false);
   const handle = async () => {
-    await copyText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2200);
+    try { await navigator.clipboard.writeText(text); }
+    catch { const el=document.createElement('textarea');el.value=text;el.style.cssText='position:fixed;opacity:0';document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el); }
+    setOk(true);
+    setTimeout(()=>setOk(false), 2000);
   };
-  return (
-    <button onClick={handle} className={`copy-btn${copied ? ' copied' : ''}`}>
-      {copied ? '✓ Copied' : `Copy ${label}`}
-    </button>
-  );
+  return <button onClick={handle} className={`copy-btn${ok?' copy-ok':''}`}>{ok?'✓ Copied':`Copy ${label}`}</button>;
 }
 
 function CharCounter({ text }) {
-  const len = (text || '').length;
-  const cls = len > 870 ? 'danger' : len > 780 ? 'warn' : 'ok';
-  return <span className={`char-counter ${cls}`}>{len} / 900</span>;
+  const n = (text||'').length;
+  const cls = n>870?'cc-bad':n>780?'cc-warn':'cc-ok';
+  return <span className={`cc ${cls}`}>{n} / 900</span>;
 }
 
-function GenreChip({ label, selected, onClick }) {
-  return (
-    <button type="button" onClick={onClick} className={`chip${selected ? ' chip-selected' : ''}`}>
-      {label}
-    </button>
-  );
-}
-
-/* ──────────── APP ──────────── */
-
+/* ═══════════════════════════════════════════════════════════
+   APP
+═══════════════════════════════════════════════════════════ */
 function App() {
   const [concept,   setConcept]   = useState('');
   const [genres,    setGenres]    = useState([]);
@@ -665,287 +1003,149 @@ function App() {
   const [language,  setLanguage]  = useState('polish');
   const [structure, setStructure] = useState('rap-standard');
   const [notes,     setNotes]     = useState('');
+  const [result,    setResult]    = useState(null);
+  const [error,     setError]     = useState('');
 
-  const [apiKey,     setApiKey]     = useState(() => localStorage.getItem('sf_key') || '');
-  const [model,      setModel]      = useState('claude-sonnet-4-6');
-  const [showKey,    setShowKey]    = useState(false);
-  const [configOpen, setConfigOpen] = useState(false);
+  const toggleGenre = useCallback(g => setGenres(p => p.includes(g)?p.filter(x=>x!==g):[...p,g]), []);
 
-  const [result,  setResult]  = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
-
-  useEffect(() => { localStorage.setItem('sf_key', apiKey); }, [apiKey]);
-
-  const toggleGenre = useCallback(g => {
-    setGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
-  }, []);
-
-  const generate = useCallback(async () => {
-    if (!apiKey.trim()) {
-      setError('API key required — enter your Anthropic API key in Settings (⚙).');
-      setConfigOpen(true);
-      return;
-    }
-    if (!concept.trim()) {
-      setError('Enter a concept or idea for the song.');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
+  const run = useCallback(() => {
+    if(!concept.trim()) { setError('Wpisz concept / idea.'); return; }
+    setError('');
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey.trim(),
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 4096,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: buildUserMessage({ concept, genres, mood, language, structure, notes }) }],
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error?.message || `API error: HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      const raw = data.content?.[0]?.text || '';
-
-      // Strip possible markdown fences then parse JSON
-      let parsed;
-      try {
-        const cleaned = raw.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-        parsed = JSON.parse(cleaned);
-      } catch {
-        const m = raw.match(/\{[\s\S]*\}/);
-        if (!m) throw new Error('Model returned unparseable output. Please retry.');
-        parsed = JSON.parse(m[0]);
-      }
-
-      if (!parsed.title || !parsed.style || !parsed.lyrics) {
-        throw new Error('Incomplete output from model. Please retry.');
-      }
-      setResult(parsed);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
+      const r = generate({ concept, genres, mood, language, structure, notes });
+      setResult(r);
+    } catch(e) {
+      setError('Generator error: ' + e.message);
     }
-  }, [apiKey, concept, genres, mood, language, structure, notes, model]);
+  }, [concept, genres, mood, language, structure, notes]);
 
   return (
     <div className="app">
-
-      {/* ── Header ── */}
-      <header className="header">
-        <div className="header-inner">
+      <header className="hdr">
+        <div className="hdr-in">
           <div className="logo">
             <span className="logo-icon">◈</span>
-            <span className="logo-text">SUNO FORGE</span>
-            <span className="logo-sub">Prompt Generator</span>
+            <span className="logo-txt">SUNO FORGE</span>
+            <span className="logo-sub">Local Generator</span>
           </div>
-          <button
-            className={`settings-btn${configOpen ? ' active' : ''}`}
-            onClick={() => setConfigOpen(o => !o)}
-            title="API Settings"
-          >⚙</button>
         </div>
-
-        {configOpen && (
-          <div className="config-panel">
-            <div className="config-col">
-              <label className="label">Anthropic API Key</label>
-              <div className="key-row">
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  value={apiKey}
-                  onChange={e => setApiKey(e.target.value)}
-                  placeholder="sk-ant-api03-..."
-                  className="input key-input"
-                  spellCheck={false}
-                  autoComplete="off"
-                />
-                <button onClick={() => setShowKey(s => !s)} className="toggle-key-btn">
-                  {showKey ? '🙈' : '👁'}
-                </button>
-              </div>
-              <p className="hint">Key stored in localStorage. Never share this machine's local storage.</p>
-            </div>
-            <div className="config-col">
-              <label className="label">Model</label>
-              <select value={model} onChange={e => setModel(e.target.value)} className="select">
-                {MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-              </select>
-              <p className="hint">Opus gives richer metaphors and better Polish. Sonnet is fast and usually sufficient.</p>
-            </div>
-          </div>
-        )}
       </header>
 
-      {/* ── Main ── */}
       <main className="main">
-
         {/* ── Form ── */}
-        <section className="panel form-panel">
+        <section className="panel">
           <h2 className="panel-title">Brief</h2>
 
-          <div className="field">
-            <label className="label">Concept / Idea *</label>
-            <textarea
-              value={concept}
-              onChange={e => setConcept(e.target.value)}
-              placeholder={"np. rozdarta lojalność między rodziną a karierą — widziana przez pryzmat chirurgii: zszywanie rany kontra amputacja. Kto decyduje, która część umiera?"}
-              className="textarea"
-              rows={4}
-            />
+          <div className="fld">
+            <label className="lbl">Concept / Idea *</label>
+            <textarea value={concept} onChange={e=>setConcept(e.target.value)}
+              placeholder="np. rozdarta lojalność między rodziną a karierą — przez pryzmat chirurgii: zszywanie rany kontra amputacja. Kto decyduje, która część umiera?"
+              className="ta" rows={4} />
           </div>
 
-          <div className="field">
-            <label className="label">Genre <span className="optional">(select multiple, or leave blank to match mood)</span></label>
+          <div className="fld">
+            <label className="lbl">Genre <span className="opt">(multi-select; blank = auto)</span></label>
             <div className="chips">
-              {GENRES.map(g => (
-                <GenreChip key={g} label={g} selected={genres.includes(g)} onClick={() => toggleGenre(g)} />
+              {GENRES.map(g=>(
+                <button key={g} type="button"
+                  className={`chip${genres.includes(g)?' chip-on':''}`}
+                  onClick={()=>toggleGenre(g)}>{g}</button>
               ))}
             </div>
           </div>
 
-          <div className="field-row">
-            <div className="field" style={{marginBottom:0}}>
-              <label className="label">Mood</label>
-              <select value={mood} onChange={e => setMood(e.target.value)} className="select">
-                {MOODS.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+          <div className="fld-row">
+            <div className="fld" style={{marginBottom:0}}>
+              <label className="lbl">Mood</label>
+              <select value={mood} onChange={e=>setMood(e.target.value)} className="sel">
+                {MOODS.map(m=><option key={m.v} value={m.v}>{m.l}</option>)}
               </select>
             </div>
-            <div className="field" style={{marginBottom:0}}>
-              <label className="label">Structure</label>
-              <select value={structure} onChange={e => setStructure(e.target.value)} className="select">
-                {STRUCTURES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            <div className="fld" style={{marginBottom:0}}>
+              <label className="lbl">Structure</label>
+              <select value={structure} onChange={e=>setStructure(e.target.value)} className="sel">
+                {STRUCTURES.map(s=><option key={s.id} value={s.id}>{s.l}</option>)}
               </select>
             </div>
           </div>
 
-          <div className="field" style={{marginTop:'16px'}}>
-            <label className="label">Language</label>
-            <div className="radio-group">
-              {LANGUAGE_OPTS.map(l => (
-                <label key={l.val} className={`radio-label${language === l.val ? ' radio-active' : ''}`}>
-                  <input
-                    type="radio"
-                    name="language"
-                    value={l.val}
-                    checked={language === l.val}
-                    onChange={() => setLanguage(l.val)}
-                    className="radio-input"
-                  />
-                  <div className="radio-content">
-                    <span className="radio-title">{l.title}</span>
-                    <span className="radio-desc">{l.desc}</span>
+          <div className="fld" style={{marginTop:'16px'}}>
+            <label className="lbl">Language</label>
+            <div className="radio-g">
+              {LANG_OPTS.map(l=>(
+                <label key={l.v} className={`radio-lbl${language===l.v?' radio-on':''}`}>
+                  <input type="radio" name="lang" value={l.v} checked={language===l.v}
+                    onChange={()=>setLanguage(l.v)} className="radio-inp" />
+                  <div className="radio-cnt">
+                    <span className="radio-ttl">{l.t}</span>
+                    <span className="radio-dsc">{l.d}</span>
                   </div>
                 </label>
               ))}
             </div>
           </div>
 
-          <div className="field">
-            <label className="label">Notes <span className="optional">(optional)</span></label>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder={"np. bez angielskiego w refrenie, mostek jako spoken word, BPM ~88, coś z rejestrem aptecznym"}
-              className="textarea"
-              rows={2}
-            />
+          <div className="fld">
+            <label className="lbl">Notes <span className="opt">(optional)</span></label>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)}
+              placeholder="np. rejestr apteczny, mostek jako spoken word, BPM ~88"
+              className="ta" rows={2} />
           </div>
 
-          {error && <div className="error-box">{error}</div>}
+          {error && <div style={{marginTop:'12px',padding:'10px 14px',background:'var(--red-dim)',border:'1px solid var(--red)',borderRadius:'8px',color:'var(--red)',fontSize:'13px'}}>{error}</div>}
 
-          <button onClick={generate} disabled={loading} className="generate-btn">
-            {loading
-              ? <><span className="spinner" />Generating…</>
-              : <>◈ Generate Suno Package</>
-            }
-          </button>
+          <button onClick={run} className="gen-btn">◈ Generate</button>
         </section>
 
         {/* ── Output ── */}
-        <section className="panel output-panel">
+        <section className="panel">
           <h2 className="panel-title">Output</h2>
 
-          {!result && !loading && (
-            <div className="empty-state">
+          {!result && (
+            <div className="empty">
               <span className="empty-icon">◈</span>
-              <p>Fill in the brief and hit <strong>Generate</strong>.<br />
-              Title, style prompt, and lyrics will appear here.<br />
-              <span style={{fontSize:'12px',color:'var(--text-dim)'}}>Style and lyrics are separate copy targets — paste each into its own Suno field.</span>
-              </p>
-            </div>
-          )}
-
-          {loading && !result && (
-            <div className="empty-state">
-              <div className="pulse-ring" />
-              <p>Generating your Suno package…</p>
+              <p>Fill the brief and hit <strong>Generate</strong>.<br/>
+              No API key needed — runs entirely in the browser.<br/>
+              <span style={{fontSize:'12px',color:'var(--tx-dim)'}}>Style and lyrics are separate copy targets for Suno's two fields.</span></p>
             </div>
           )}
 
           {result && (
             <div className="result">
-
-              {/* Title */}
-              <div className="result-block">
-                <div className="result-header">
-                  <span className="result-label">Title</span>
+              <div className="res-blk">
+                <div className="res-hdr">
+                  <span className="res-lbl">Title</span>
                   <CopyButton text={result.title} label="title" />
                 </div>
-                <div className="result-title">{result.title}</div>
+                <div className="res-title">{result.title}</div>
               </div>
 
-              {/* Style */}
-              <div className="result-block">
-                <div className="result-header">
-                  <span className="result-label">Style of Music</span>
-                  <div className="result-actions">
+              <div className="res-blk">
+                <div className="res-hdr">
+                  <span className="res-lbl">Style of Music</span>
+                  <div className="res-acts">
                     <CharCounter text={result.style} />
                     <CopyButton text={result.style} label="style" />
                   </div>
                 </div>
-                <p className="hint" style={{marginBottom:'8px'}}>
-                  Paste into Suno's <strong>Style of Music</strong> field
-                </p>
-                <pre className="result-text">{result.style}</pre>
+                <p className="hint" style={{marginBottom:'8px'}}>→ Suno's <strong>Style of Music</strong> field</p>
+                <pre className="res-txt">{result.style}</pre>
               </div>
 
-              {/* Lyrics */}
-              <div className="result-block">
-                <div className="result-header">
-                  <span className="result-label">Lyrics</span>
+              <div className="res-blk">
+                <div className="res-hdr">
+                  <span className="res-lbl">Lyrics</span>
                   <CopyButton text={result.lyrics} label="lyrics" />
                 </div>
-                <p className="hint" style={{marginBottom:'8px'}}>
-                  Paste into Suno's <strong>Lyrics</strong> field
-                </p>
-                <pre className="result-text">{result.lyrics}</pre>
+                <p className="hint" style={{marginBottom:'8px'}}>→ Suno's <strong>Lyrics</strong> field</p>
+                <pre className="res-txt">{result.lyrics}</pre>
               </div>
 
-              {/* Regenerate */}
-              <button onClick={generate} disabled={loading} className="regen-btn">
-                {loading ? <><span className="spinner" style={{width:'12px',height:'12px',borderWidth:'1.5px'}} /> Generating…</> : '↺ Regenerate'}
-              </button>
-
+              <button onClick={run} className="regen-btn">↺ Regenerate</button>
             </div>
           )}
         </section>
       </main>
-
     </div>
   );
 }
