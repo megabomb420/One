@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>SUNO FORGE — Prompt Generator</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --bg:          #09090f;
+      --surface:     #0e0e1c;
+      --card:        #13132a;
+      --card2:       #17172e;
+      --border:      #222240;
+      --border-hi:   #3a3a70;
+      --accent:      #7c6af6;
+      --accent-glow: rgba(124,106,246,0.18);
+      --accent-hi:   #9b8aff;
+      --pink:        #e040fb;
+      --pink-dim:    rgba(224,64,251,0.12);
+      --green:       #22d47e;
+      --green-dim:   rgba(34,212,126,0.15);
+      --red:         #f87171;
+      --red-dim:     rgba(248,113,113,0.12);
+      --yellow:      #fbbf24;
+      --yellow-dim:  rgba(251,191,36,0.12);
+      --text:        #ddd8f8;
+      --text-mid:    #9990c0;
+      --text-dim:    #5c5880;
+      --mono:        'JetBrains Mono','Fira Code','Cascadia Code',Consolas,'Courier New',monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ── */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo { display: flex; align-items: baseline; gap: 8px; }
+    .logo-icon {
+      font-size: 20px;
+      color: var(--accent);
+      filter: drop-shadow(0 0 8px var(--accent));
+      line-height: 1;
+    }
+    .logo-text {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--text);
+    }
+    .logo-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .settings-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-mid);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .settings-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+    .settings-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+    .config-panel {
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 640px) { .config-panel { grid-template-columns: 1fr; } }
+    .config-col { display: flex; flex-direction: column; gap: 6px; }
+
+    .main {
+      flex: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 24px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .main { grid-template-columns: 1fr; }
+    }
+
+    /* ── Panel ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Form fields ── */
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 540px) { .field-row { grid-template-columns: 1fr; } }
+
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+    }
+    .optional { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-dim); }
+
+    .input, .select, .textarea {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 12px;
+      width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      font-family: inherit;
+    }
+    .input:focus, .select:focus, .textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .input::placeholder, .textarea::placeholder { color: var(--text-dim); }
+    .textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+    .select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236060a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    .select option { background: var(--card2); color: var(--text); }
+
+    .key-row { display: flex; gap: 8px; }
+    .key-input { flex: 1; font-family: var(--mono); font-size: 13px; }
+    .toggle-key-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-mid);
+      padding: 0 12px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    .toggle-key-btn:hover { border-color: var(--border-hi); }
+
+    .hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .hint strong { color: var(--text-mid); }
+
+    /* ── Genre chips ── */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text-mid);
+      font-size: 12px;
+      padding: 4px 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .chip:hover { border-color: var(--border-hi); color: var(--text); }
+    .chip-selected {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent-hi);
+      font-weight: 600;
+    }
+
+    /* ── Radio language ── */
+    .radio-group { display: flex; flex-direction: column; gap: 6px; }
+    .radio-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .radio-label:hover { border-color: var(--border-hi); }
+    .radio-active { border-color: var(--accent) !important; background: var(--accent-glow) !important; }
+    .radio-input { margin-top: 2px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+    .radio-content { display: flex; flex-direction: column; gap: 2px; }
+    .radio-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .radio-desc { font-size: 11px; color: var(--text-mid); line-height: 1.4; }
+
+    /* ── Buttons ── */
+    .generate-btn {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--pink) 100%);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 24px rgba(124,106,246,0.35);
+    }
+    .generate-btn:hover:not(:disabled) {
+      opacity: 0.92;
+      box-shadow: 0 4px 32px rgba(124,106,246,0.55);
+      transform: translateY(-1px);
+    }
+    .generate-btn:active:not(:disabled) { transform: translateY(0); }
+    .generate-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .regen-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-mid);
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      width: 100%;
+      margin-top: 4px;
+    }
+    .regen-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+    .regen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .copy-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-mid);
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { border-color: var(--border-hi); color: var(--text); }
+    .copy-btn.copied {
+      background: var(--green-dim);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .pulse-ring {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      animation: pulse 1.4s ease-in-out infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.8); opacity: 0.4; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    /* ── Error / info ── */
+    .error-box {
+      background: var(--red-dim);
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      color: var(--red);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    /* ── Output ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    .empty-icon {
+      font-size: 36px;
+      color: var(--border-hi);
+      margin-bottom: 12px;
+      display: block;
+      filter: drop-shadow(0 0 12px var(--accent-glow));
+    }
+
+    .result { display: flex; flex-direction: column; gap: 16px; }
+
+    .result-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .result-block:hover { border-color: var(--border-hi); }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .result-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .result-actions { display: flex; align-items: center; gap: 8px; }
+
+    .result-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    .result-text {
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--card2);
+      border-radius: 6px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      max-height: 420px;
+      overflow-y: auto;
+    }
+    .result-text::-webkit-scrollbar { width: 4px; }
+    .result-text::-webkit-scrollbar-track { background: transparent; }
+    .result-text::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 4px; }
+
+    .char-counter {
+      font-size: 11px;
+      font-family: var(--mono);
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .char-counter.ok    { color: var(--green); background: var(--green-dim); }
+    .char-counter.warn  { color: var(--yellow); background: var(--yellow-dim); }
+    .char-counter.danger{ color: var(--red); background: var(--red-dim); }
+
+    /* ── Scrollbar global ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useCallback, useEffect } = React;
+
+/* ──────────── CONSTANTS ──────────── */
+
+const GENRES = [
+  'Polish Rap', 'Dark R&B', 'Trap', 'Miami Bass',
+  'Deep Dubstep', 'Wave', 'Phonk', 'Instrumental Hip Hop',
+  'Drill', 'Lo-fi Hip Hop', 'Dark Ambient', 'Jersey Club',
+];
+
+const MOODS = [
+  { val: 'dark', label: 'Mroczny / Dark' },
+  { val: 'melancholic', label: 'Melancholijny / Melancholic' },
+  { val: 'aggressive', label: 'Agresywny / Aggressive' },
+  { val: 'hypnotic', label: 'Hipnotyczny / Hypnotic' },
+  { val: 'cinematic', label: 'Kinematograficzny / Cinematic' },
+  { val: 'introspective', label: 'Introspekcyjny / Introspective' },
+  { val: 'cold', label: 'Zimny / Cold' },
+  { val: 'paranoid', label: 'Paranoiczny / Paranoid' },
+  { val: 'euphoric', label: 'Euforyczny / Euphoric' },
+  { val: 'spiritual', label: 'Duchowy / Spiritual' },
+];
+
+const STRUCTURES = [
+  {
+    id: 'rap-standard',
+    label: 'Rap Standard: V → Hook × 3',
+    desc: 'Three verses (increasing density) separated by a minimal stripped hook. No intro — starts direct. Optional bridge before final hook.'
+  },
+  {
+    id: 'trap',
+    label: 'Trap: Intro → V → Hook × 2 + Bridge',
+    desc: 'Dark instrumental intro (8 bars), two verses with trap hook, breakdown bridge, final hook with added energy layer.'
+  },
+  {
+    id: 'rnb-full',
+    label: 'Dark R&B: V → Pre-C → Chorus × 2 + Bridge',
+    desc: 'Two full verse-pre-chorus-chorus cycles with a contrasting breakdown bridge and final climactic chorus. Full emotional arc.'
+  },
+  {
+    id: 'wave',
+    label: 'Wave/Phonk: Intro → V → Drop × 2 + Outro',
+    desc: 'Atmospheric intro, verse builds tension, drops replace chorus with pure sonic impact. Distorted outro fades into texture.'
+  },
+  {
+    id: 'extended',
+    label: 'Extended: Intro → V → PC → C × 2 + Bridge + Coda',
+    desc: 'Full cinematic structure with all sections. Coda is a final cold statement — single line over bare production.'
+  },
+  {
+    id: 'minimal',
+    label: 'Minimal: V → Refrain × 2',
+    desc: 'Two dense narrative verses with a short repeating refrain (4–6 lines). No traditional chorus. Poem-forward composition.'
+  },
+];
+
+const LANGUAGE_OPTS = [
+  {
+    val: 'polish',
+    title: 'Polski',
+    desc: 'Całkowicie po polsku. Naturalna metryka sylabiczna, autentyczny slang.',
+  },
+  {
+    val: 'english',
+    title: 'English',
+    desc: 'Full English. Optional Polish phrase as contrast.',
+  },
+  {
+    val: 'bilingual',
+    title: 'Dwujęzyczny / Bilingual',
+    desc: 'Polish for dense narrative/personal sections, English for universal hooks. Organic code-switching.',
+  },
+];
+
+const MODELS = [
+  { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6 (fast, ~$0.01)' },
+  { id: 'claude-opus-4-7',   label: 'Opus 4.7 (best quality, ~$0.08)' },
+];
+
+/* ──────────── SYSTEM PROMPT ──────────── */
+
+const SYSTEM_PROMPT = `You are an expert Suno AI music prompt generator. Your task: given a creative brief, produce a complete, professional Suno-ready music package.
+
+## STYLE PROMPT RULES — "Style of Music" field in Suno
+- Target 60–110 words. HARD LIMIT: under 900 characters.
+- Format: comma-separated dense production brief. Treat it as liner notes written for an AI music producer.
+- REQUIRED elements (all of them):
+  • Primary genre(s) — maximum 2–3 labels, no contradictory stacks
+  • BPM range (e.g. "78–85 BPM")
+  • Musical key + mode (e.g. "F# minor", "G Dorian")
+  • Vocal character — voice type, delivery style, texture (e.g. "dry Polish baritone with clipped syllable control")
+  • Instrumental roles with FUNCTION described — not just "guitar" but "guitar carries the rhythmic pulse with muted percussive strokes"
+  • Production texture — reverb depth, saturation level, spatial quality
+  • Emotional tone and structural arc — how the energy moves across the song
+- Lead with whatever most defines the sound: the signature texture, the primary genre, or the vocal character.
+- NEVER cite artist names. Translate them to traits: vocal range, groove pocket, production texture, emotional delivery.
+- FORBIDDEN: abstract adjectives alone ("dark" must attach to a noun: "dark piano voicing"); negative instructions ("no X"); bare instrument lists without function context.
+
+## LYRIC RULES — "Lyrics" field in Suno
+- Section tags: [Intro], [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Outro], [Hook], [Refrain], [Breakdown], [Cold Ending]
+- Enrich key structural moments with combined single-line cues: [Chorus - Big Chorus], [Bridge - Stripped Breakdown], [Outro - Cold Ending], [Verse 1 - Dense Flow]
+- Use 4–8 enriched cue tags per song total — target: intro, first chorus/hook payoff, bridge, final section.
+- VERSES: specific, imagistic, each one advances story or perspective. Syllable-controlled lines. No line padding.
+- CHORUS/HOOK: simple, repeatable, emotionally central. One line that listeners want to repeat.
+- ABSOLUTE FORBIDDEN AI-slop — never write these or any similar clichés:
+  "echoes in my mind" / "burning desire" / "feel the rhythm" / "lost in the night" / "shadows of my soul"
+  "rise and fall" / "tears in the rain" / "dance in the dark" / "shattered dreams" / "fire in my veins"
+  "through the darkness" / "find my way" / "broken inside" / "heart of stone" / "endless night"
+  "feel alive" / "chase my dreams" / "in my veins" / "can't stop now" / "fall apart"
+  Replace every cliché with fresh, specific, surprising imagery.
+- Apply complex rhyme craft: mosaic rhymes (split across syllable boundaries), anadiplosis (end of line repeats as start of next), internal rhyme chains, slant rhyme.
+- Draw from medical, culinary, chemical, architectural registers for metaphors — not emotional abstractions.
+- Polish lyrics: respect natural stress (penultimate syllable), use authentic colloquial Polish, culturally grounded imagery. Not academic — street-literary.
+- Bilingual: assign languages purposefully. Polish = dense personal narrative. English = universal/punchy hooks. Code-switching must feel organic, not accidental.
+
+## USER STYLE PROFILE — always apply
+- Genres: Polish Rap, Dark R&B, Trap, Miami Bass, Deep Dubstep, Wave/Phonk, Instrumental Hip Hop
+- Language default: Polish primary, bilingual Polish/English
+- Tone: dense metaphors, literary layers, medical/culinary/chemical register
+- Craft: complex rhyme schemes, anadiplosis, mosaic rhymes, internal rhymes, syllable control
+- Never write tourist Polish — write how someone who lives in it thinks and speaks.
+
+## QUALITY GATE — verify before outputting
+✓ Style prompt is under 900 characters and reads as a production brief, not a genre list
+✓ No AI-slop phrases anywhere in the lyrics
+✓ Each verse contains at least one fresh, non-generic, register-specific image
+✓ Chorus/hook is genuinely memorable and stripped-down
+✓ Section tags correctly formatted: [Section Name - Cue] on its own line before lyrics
+
+## OUTPUT FORMAT
+Return ONLY a raw JSON object — no markdown fences, no explanation, no surrounding text:
+{"title":"...","style":"...","lyrics":"..."}`;
+
+/* ──────────── USER MESSAGE BUILDER ──────────── */
+
+function buildUserMessage({ concept, genres, mood, language, structure, notes }) {
+  const stObj = STRUCTURES.find(s => s.id === structure);
+  const lgObj = LANGUAGE_OPTS.find(l => l.val === language);
+
+  let msg = `Generate a complete Suno music package for:
+
+CONCEPT / IDEA:
+${concept}
+
+GENRES: ${genres.length ? genres.join(', ') : '(choose from user style profile based on concept)'}
+MOOD: ${mood}
+LANGUAGE: ${lgObj.title} — ${lgObj.desc}
+SONG STRUCTURE: ${stObj.label}
+Structure description: ${stObj.desc}`;
+
+  if (notes.trim()) msg += `\n\nADDITIONAL NOTES:\n${notes}`;
+
+  msg += `\n\nApply all rules from the system prompt. Remember the user's style profile. The lyrics must feel lived-in, not generated.`;
+
+  return msg;
+}
+
+/* ──────────── UTILS ──────────── */
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+  }
+}
+
+/* ──────────── COMPONENTS ──────────── */
+
+function CopyButton({ text, label }) {
+  const [copied, setCopied] = useState(false);
+  const handle = async () => {
+    await copyText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2200);
+  };
+  return (
+    <button onClick={handle} className={`copy-btn${copied ? ' copied' : ''}`}>
+      {copied ? '✓ Copied' : `Copy ${label}`}
+    </button>
+  );
+}
+
+function CharCounter({ text }) {
+  const len = (text || '').length;
+  const cls = len > 870 ? 'danger' : len > 780 ? 'warn' : 'ok';
+  return <span className={`char-counter ${cls}`}>{len} / 900</span>;
+}
+
+function GenreChip({ label, selected, onClick }) {
+  return (
+    <button type="button" onClick={onClick} className={`chip${selected ? ' chip-selected' : ''}`}>
+      {label}
+    </button>
+  );
+}
+
+/* ──────────── APP ──────────── */
+
+function App() {
+  const [concept,   setConcept]   = useState('');
+  const [genres,    setGenres]    = useState([]);
+  const [mood,      setMood]      = useState('dark');
+  const [language,  setLanguage]  = useState('polish');
+  const [structure, setStructure] = useState('rap-standard');
+  const [notes,     setNotes]     = useState('');
+
+  const [apiKey,     setApiKey]     = useState(() => localStorage.getItem('sf_key') || '');
+  const [model,      setModel]      = useState('claude-sonnet-4-6');
+  const [showKey,    setShowKey]    = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
+
+  const [result,  setResult]  = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
+
+  useEffect(() => { localStorage.setItem('sf_key', apiKey); }, [apiKey]);
+
+  const toggleGenre = useCallback(g => {
+    setGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
+  }, []);
+
+  const generate = useCallback(async () => {
+    if (!apiKey.trim()) {
+      setError('API key required — enter your Anthropic API key in Settings (⚙).');
+      setConfigOpen(true);
+      return;
+    }
+    if (!concept.trim()) {
+      setError('Enter a concept or idea for the song.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey.trim(),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: buildUserMessage({ concept, genres, mood, language, structure, notes }) }],
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `API error: HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      const raw = data.content?.[0]?.text || '';
+
+      // Strip possible markdown fences then parse JSON
+      let parsed;
+      try {
+        const cleaned = raw.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+        parsed = JSON.parse(cleaned);
+      } catch {
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error('Model returned unparseable output. Please retry.');
+        parsed = JSON.parse(m[0]);
+      }
+
+      if (!parsed.title || !parsed.style || !parsed.lyrics) {
+        throw new Error('Incomplete output from model. Please retry.');
+      }
+      setResult(parsed);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [apiKey, concept, genres, mood, language, structure, notes, model]);
+
+  return (
+    <div className="app">
+
+      {/* ── Header ── */}
+      <header className="header">
+        <div className="header-inner">
+          <div className="logo">
+            <span className="logo-icon">◈</span>
+            <span className="logo-text">SUNO FORGE</span>
+            <span className="logo-sub">Prompt Generator</span>
+          </div>
+          <button
+            className={`settings-btn${configOpen ? ' active' : ''}`}
+            onClick={() => setConfigOpen(o => !o)}
+            title="API Settings"
+          >⚙</button>
+        </div>
+
+        {configOpen && (
+          <div className="config-panel">
+            <div className="config-col">
+              <label className="label">Anthropic API Key</label>
+              <div className="key-row">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  placeholder="sk-ant-api03-..."
+                  className="input key-input"
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+                <button onClick={() => setShowKey(s => !s)} className="toggle-key-btn">
+                  {showKey ? '🙈' : '👁'}
+                </button>
+              </div>
+              <p className="hint">Key stored in localStorage. Never share this machine's local storage.</p>
+            </div>
+            <div className="config-col">
+              <label className="label">Model</label>
+              <select value={model} onChange={e => setModel(e.target.value)} className="select">
+                {MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+              </select>
+              <p className="hint">Opus gives richer metaphors and better Polish. Sonnet is fast and usually sufficient.</p>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* ── Main ── */}
+      <main className="main">
+
+        {/* ── Form ── */}
+        <section className="panel form-panel">
+          <h2 className="panel-title">Brief</h2>
+
+          <div className="field">
+            <label className="label">Concept / Idea *</label>
+            <textarea
+              value={concept}
+              onChange={e => setConcept(e.target.value)}
+              placeholder={"np. rozdarta lojalność między rodziną a karierą — widziana przez pryzmat chirurgii: zszywanie rany kontra amputacja. Kto decyduje, która część umiera?"}
+              className="textarea"
+              rows={4}
+            />
+          </div>
+
+          <div className="field">
+            <label className="label">Genre <span className="optional">(select multiple, or leave blank to match mood)</span></label>
+            <div className="chips">
+              {GENRES.map(g => (
+                <GenreChip key={g} label={g} selected={genres.includes(g)} onClick={() => toggleGenre(g)} />
+              ))}
+            </div>
+          </div>
+
+          <div className="field-row">
+            <div className="field" style={{marginBottom:0}}>
+              <label className="label">Mood</label>
+              <select value={mood} onChange={e => setMood(e.target.value)} className="select">
+                {MOODS.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+              </select>
+            </div>
+            <div className="field" style={{marginBottom:0}}>
+              <label className="label">Structure</label>
+              <select value={structure} onChange={e => setStructure(e.target.value)} className="select">
+                {STRUCTURES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="field" style={{marginTop:'16px'}}>
+            <label className="label">Language</label>
+            <div className="radio-group">
+              {LANGUAGE_OPTS.map(l => (
+                <label key={l.val} className={`radio-label${language === l.val ? ' radio-active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="language"
+                    value={l.val}
+                    checked={language === l.val}
+                    onChange={() => setLanguage(l.val)}
+                    className="radio-input"
+                  />
+                  <div className="radio-content">
+                    <span className="radio-title">{l.title}</span>
+                    <span className="radio-desc">{l.desc}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="label">Notes <span className="optional">(optional)</span></label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder={"np. bez angielskiego w refrenie, mostek jako spoken word, BPM ~88, coś z rejestrem aptecznym"}
+              className="textarea"
+              rows={2}
+            />
+          </div>
+
+          {error && <div className="error-box">{error}</div>}
+
+          <button onClick={generate} disabled={loading} className="generate-btn">
+            {loading
+              ? <><span className="spinner" />Generating…</>
+              : <>◈ Generate Suno Package</>
+            }
+          </button>
+        </section>
+
+        {/* ── Output ── */}
+        <section className="panel output-panel">
+          <h2 className="panel-title">Output</h2>
+
+          {!result && !loading && (
+            <div className="empty-state">
+              <span className="empty-icon">◈</span>
+              <p>Fill in the brief and hit <strong>Generate</strong>.<br />
+              Title, style prompt, and lyrics will appear here.<br />
+              <span style={{fontSize:'12px',color:'var(--text-dim)'}}>Style and lyrics are separate copy targets — paste each into its own Suno field.</span>
+              </p>
+            </div>
+          )}
+
+          {loading && !result && (
+            <div className="empty-state">
+              <div className="pulse-ring" />
+              <p>Generating your Suno package…</p>
+            </div>
+          )}
+
+          {result && (
+            <div className="result">
+
+              {/* Title */}
+              <div className="result-block">
+                <div className="result-header">
+                  <span className="result-label">Title</span>
+                  <CopyButton text={result.title} label="title" />
+                </div>
+                <div className="result-title">{result.title}</div>
+              </div>
+
+              {/* Style */}
+              <div className="result-block">
+                <div className="result-header">
+                  <span className="result-label">Style of Music</span>
+                  <div className="result-actions">
+                    <CharCounter text={result.style} />
+                    <CopyButton text={result.style} label="style" />
+                  </div>
+                </div>
+                <p className="hint" style={{marginBottom:'8px'}}>
+                  Paste into Suno's <strong>Style of Music</strong> field
+                </p>
+                <pre className="result-text">{result.style}</pre>
+              </div>
+
+              {/* Lyrics */}
+              <div className="result-block">
+                <div className="result-header">
+                  <span className="result-label">Lyrics</span>
+                  <CopyButton text={result.lyrics} label="lyrics" />
+                </div>
+                <p className="hint" style={{marginBottom:'8px'}}>
+                  Paste into Suno's <strong>Lyrics</strong> field
+                </p>
+                <pre className="result-text">{result.lyrics}</pre>
+              </div>
+
+              {/* Regenerate */}
+              <button onClick={generate} disabled={loading} className="regen-btn">
+                {loading ? <><span className="spinner" style={{width:'12px',height:'12px',borderWidth:'1.5px'}} /> Generating…</> : '↺ Regenerate'}
+              </button>
+
+            </div>
+          )}
+        </section>
+      </main>
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
